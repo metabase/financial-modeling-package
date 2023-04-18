@@ -1,10 +1,10 @@
 with final as (
   select
     price.id
-    , case price.id
-        when '{stripe_price_id}' then '{stripe_price_name}'
-        else 'other'
-      end as name
+    -- TODO: Add mapping
+    --, case price.id
+    --    else 'other'
+    --  end as name
     , price.created as created_at
     , price.active as is_active
     , nickname as description
@@ -23,8 +23,8 @@ with final as (
     , recurring_interval_count
     , unit_amount::float / 100 as unit_amount
     , product_id
-  from {{{{ source('{stripe_source}', 'price') }}}}
-  left join {{{{ source('{stripe_source}', 'product') }}}}
+  from {stripe_schema}.price
+  left join {stripe_schema}.product
     on price.product_id = product.id
   where price.livemode and not price.is_deleted
 
