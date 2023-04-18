@@ -12,6 +12,7 @@ from googleapiclient.errors import HttpError
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
+
 def main():
 
     # I was trying ot put the sheet information in the credentials file
@@ -64,8 +65,8 @@ def main():
         }
 
         try:
-            response = service.spreadsheets().values().batchUpdate(spreadsheetId=SAMPLE_SPREADSHEET_ID,
-                                                                   body=batch_update_body).execute()
+            service.spreadsheets().values().batchUpdate(spreadsheetId=SAMPLE_SPREADSHEET_ID,
+                                                        body=batch_update_body).execute()
             print('Values updated successfully!')
 
         except HttpError as error:
@@ -74,10 +75,9 @@ def main():
     except HttpError as err:
         print(err)
 
-
     print('TODO: Create Tabs Dynamically & Import Data')
 
-    #I know how to generate the tab if it does not exist but IMPORTDATA is not working as expected
+    # I know how to generate the tab if it does not exist but IMPORTDATA is not working as expected
 
     # for key in tabs_json:
     #     sheets = service.spreadsheets().get(spreadsheetId=SAMPLE_SPREADSHEET_ID).execute().get('sheets', [])
