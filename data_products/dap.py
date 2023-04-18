@@ -1,40 +1,48 @@
+from functools import cached_property
 from pathlib import Path
 import click
 import yaml
 
+
 class DAP:
     """ Automate the setup of data products """
+    CONFIG_FILE = Path('config.yml')
+
     def __init__(self, sqls_path=Path(__file__).parent.parent / 'sqls'):
         #: Path to SQL templates
         self.sqls_path = sqls_path
 
+    @cached_property
+    def config(self):
+        if not self.CONFIG_FILE.exists():
+            exit('config.yml does not exist in current directory. Please run "dap setup" to generate')
+
+        with self.CONFIG_FILE.open() as fp:
+            return yaml.load(fp)
+
     def setup(self):
         """ Setup configuration file for data products """
-        # TODO:
-        print('TODO: Ask for Metabase url and credentials')
-        url = click.prompt('Enter your Metabase URL', type=text, required=true)
-        username = click.prompt('Enter your username', type=text, required=true)
-        pw = click.prompt('Enter your password', type=password, confirmation_prompt=True, hide_input=True, required=true)
+        if (self.CONFIG_FILE.exists()
+                and not click.confirm(str(self.CONFIG_FILE) + ' exists. Do you want to override it?')):
+            return
 
-        print('TODO: Ask for schema info for Stripe tables from Fivetran')
-        schema = click.prompt('Enter your schema name', type=text, required=true)
+        url = click.prompt('Enter your Metabase URL')
+        username = click.prompt('Enter your Metabase username')
+        password = click.prompt('Enter your Metabase password', confirmation_prompt=True, hide_input=True)
 
-        print('TODO: Query the tables and pull in info to configure price/product')
-        
+        schema = click.prompt('Enter your Stripe schema name')
+
         # Write the YAML file
-        setup_dict = {'metabase': {'url': url, 'username': username, 'password': pw, 'schema': schema}}
-    
-        with Path('config.yml').open('w') as file:
-          # file.write(string_data)
-          yaml.dump(setup_dict, file)
-          file.close()
+        setup_dict = {'metabase': {'url': url, 'username': username, 'password': password},
+                      'stripe': {'schema': schema}}
 
-        print('TODO: Created config.yml')
+        with self.CONFIG_FILE.open('w') as file:
+          yaml.dump(setup_dict, file)
+
+        print('Created config.yml')
 
     def create(self):
         """ Create data products based on configuration file. """
-        print('TODO: Read config.yml')
-
         print('TODO: Creating models')
         for folder in self.sqls_path.iterdir():
             for file in folder.glob('*.sql'):
