@@ -1,4 +1,9 @@
 config.yml
+venv
+
+#Google Sheet API Credentials
+.credentials.json
+.token.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
