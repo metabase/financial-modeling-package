@@ -5,6 +5,7 @@ import click
 import yaml
 
 from data_products.metabase_client import MetabaseClient
+from data_products.gsheets import create_gsheets
 
 
 class DAP:
@@ -46,6 +47,8 @@ class DAP:
         with self.CONFIG_FILE.open('w') as file:
           yaml.dump(setup_dict, file)
 
+        print('TODO: Ask for GSheets API credentials')
+
         print(f'Created {self.CONFIG_FILE} -- feel free to modify it if needed')
 
     def create(self):
@@ -75,25 +78,28 @@ class DAP:
             collection_id = resp['id']
             print('\t - In new collection', self.config['models']['collection'])
 
-        for folder in self.sqls_path.iterdir():
-            for file in folder.glob('*.sql'):
-                name = file.name.split('.')[0].replace('_', ' ').title()
-                model_json = {
-                  "name": name,
-                  "dataset": True,
-                  "dataset_query": {
-                    "type": "native",
-                    "native": {
-                      "query": Path(file).open().read().format(stripe_schema=self.config['stripe']['schema']),
-                    },
-                    "database": db_id
-                  },
-                  "display": "table",
-                  "description": None,
-                  "visualization_settings": {},
-                  "collection_id": collection_id,
-                }
-                resp = mb_client.post('card', json=model_json)
-                print('\t- Created new model', name, 'at', self.config['metabase']['url'] + 'model/' + str(resp['id']))
+        if False:
+            for folder in self.sqls_path.iterdir():
+                for file in folder.glob('*.sql'):
+                    name = file.name.split('.')[0].replace('_', ' ').title()
+                    model_json = {
+                      "name": name,
+                      "dataset": True,
+                      "dataset_query": {
+                        "type": "native",
+                        "native": {
+                          "query": Path(file).open().read().format(stripe_schema=self.config['stripe']['schema']),
+                        },
+                        "database": db_id
+                      },
+                      "display": "table",
+                      "description": None,
+                      "visualization_settings": {},
+                      "collection_id": collection_id,
+                    }
+                    resp = mb_client.post('card', json=model_json)
+                    print('\t- Created new model', name, 'at', self.config['metabase']['url'] + 'model/' + str(resp['id']))
 
-        print('TODO: Creating GSheet financial model from template')
+        print('TODO: Create more models that will be used directly in the GSheets below and save urls to config.yml')
+
+        create_gsheets()
