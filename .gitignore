@@ -3,6 +3,7 @@ venv
 
 #Google Sheet API Credentials
 .credentials.json
+gsheets_credentials.json
 .token.json
 
 # Byte-compiled / optimized / DLL files
