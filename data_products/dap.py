@@ -115,7 +115,7 @@ class DAP:
             if model_id and not force:
                 print('\t- Model', name, 'already exists. Use --force to update it')
                 sql_dependencies.pop(file)
-                created[ref_name] = '{{' + f'#{model_id}' + '}} ' + ref_name
+                created[ref_name] = '{{' + f'#{model_id}' + '}}'
                 models[ref_name] = model_id
                 continue
 
@@ -158,7 +158,7 @@ class DAP:
                 print('\t- Created new model', name, 'at', self.config['metabase']['url'] + f'model/{model_id}')
 
             sql_dependencies.pop(file)
-            created[ref_name] = '{{' + f'#{model_id}' + '}} ' + ref_name
+            created[ref_name] = '{{' + f'#{model_id}' + '}}'
             models[ref_name] = model_id
 
         print('TODO: Create more models that will be used directly in the GSheets below and save urls to config.yml')
