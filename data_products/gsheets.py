@@ -13,13 +13,14 @@ from googleapiclient.errors import HttpError
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 
-def create_gsheets():
+def create_gsheets(json_file='gsheets_credentials.json'):
 
     print('TODO: Read Metabase questions URLs from config.yml')
     print('TODO: Create GSheet Tabs Dynamically & Import Data')
 
     # load spreadsheet information from credentials file
-    with open('.credentials.json') as f:
+    # with open('.credentials.json') as f:
+    with open(json_file) as f:
         credentials = json.load(f)
 
         SAMPLE_SPREADSHEET_ID = credentials['google_sheet_info']['SAMPLE_SPREADSHEET_ID']
@@ -39,7 +40,8 @@ def create_gsheets():
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                '.credentials.json', SCOPES)
+                # '.credentials.json', SCOPES)
+                json_file, SCOPES)
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
         with open('.token.json', 'w') as token:
