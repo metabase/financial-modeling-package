@@ -11,8 +11,8 @@ with final as (
     , customer.delinquent as is_delinquent
     , customer.invoice_prefix
     , customer.balance::float / 100 as balance
-  from {{{{ source('{stripe_source}', 'customer') }}}}
-  left join {{{{ source('{stripe_source}', 'card') }}}}
+  from {stripe_schema}.customer
+  left join {stripe_schema}.card
     on customer.default_card_id = card.id
   where customer.livemode and not customer.is_deleted
 

@@ -12,21 +12,22 @@ from googleapiclient.errors import HttpError
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
-def main():
 
-    # I was trying ot put the sheet information in the credentials file
+def create_gsheets():
+
+    print('TODO: Read Metabase questions URLs from config.yml')
+    print('TODO: Create GSheet Tabs Dynamically & Import Data')
 
     # load spreadsheet information from credentials file
     with open('.credentials.json') as f:
         credentials = json.load(f)
 
         SAMPLE_SPREADSHEET_ID = credentials['google_sheet_info']['SAMPLE_SPREADSHEET_ID']
-        print("spreadsheet_ID", credentials['google_sheet_info']['SAMPLE_SPREADSHEET_ID'])
         SAMPLE_RANGE_NAME = credentials['google_sheet_info']['SAMPLE_RANGE_NAME']
-        print('SAMPLE RANGE NAME', credentials['google_sheet_info']['SAMPLE_RANGE_NAME'])
         tabs_json = credentials['tabs_json']
 
-    print('TODO: Ingest Metabase questions URLs')
+    print("Updating spreadsheet_ID", credentials['google_sheet_info']['SAMPLE_SPREADSHEET_ID'])
+    # print('\tIn range', credentials['google_sheet_info']['SAMPLE_RANGE_NAME'])
 
     # Authenticate
     creds = None
@@ -64,9 +65,9 @@ def main():
         }
 
         try:
-            response = service.spreadsheets().values().batchUpdate(spreadsheetId=SAMPLE_SPREADSHEET_ID,
-                                                                   body=batch_update_body).execute()
-            print('Values updated successfully!')
+            service.spreadsheets().values().batchUpdate(spreadsheetId=SAMPLE_SPREADSHEET_ID,
+                                                        body=batch_update_body).execute()
+            print('URL values updated successfully!')
 
         except HttpError as error:
             print(f'An error occurred: {error}')
@@ -74,10 +75,7 @@ def main():
     except HttpError as err:
         print(err)
 
-
-    print('TODO: Create Tabs Dynamically & Import Data')
-
-    #I know how to generate the tab if it does not exist but IMPORTDATA is not working as expected
+    # I know how to generate the tab if it does not exist but IMPORTDATA is not working as expected
 
     # for key in tabs_json:
     #     sheets = service.spreadsheets().get(spreadsheetId=SAMPLE_SPREADSHEET_ID).execute().get('sheets', [])
@@ -126,4 +124,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    create_gsheets()

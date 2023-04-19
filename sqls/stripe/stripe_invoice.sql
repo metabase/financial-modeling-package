@@ -21,7 +21,7 @@ with final as (
     , customer_id
     , subscription_id
     , charge_id
-  from {{{{ source('{stripe_source}', 'invoice') }}}}
+  from {stripe_schema}.invoice
   where livemode and not is_deleted
 )
 
