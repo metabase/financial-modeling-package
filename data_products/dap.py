@@ -1,7 +1,10 @@
+from collections import defaultdict
 from functools import cached_property
 from pathlib import Path
-import click
+import re
+from uuid import uuid4
 
+import click
 import yaml
 
 from data_products.metabase_client import MetabaseClient
@@ -88,39 +91,79 @@ class DAP:
         resp = mb_client.get(f'collection/{collection_id}/items')
         existing_models = dict((i['name'], i['id']) for i in resp['data'])
 
-        for folder in self.sqls_path.iterdir():
-            for file in folder.glob('*.sql'):
-                name = file.name.split('.')[0].replace('_', ' ').title()
-                model_id = existing_models.get(name)
+        # Generate dependencies
+        sql_dependencies = defaultdict(set)
+        for file in self.sqls_path.glob('*.sql'):
+            sql_dependencies[file] = self._extract_dependencies_from_sql(file.open().read())
 
-                if model_id and not force:
-                    print('\t- Model', name, 'already exists. Use --force to update it')
-                    continue
+        created = {'stripe_schema': self.config['stripe']['schema']}
+        models = {}
 
-                model_json = {
-                  "name": name,
-                  "dataset": True,
-                  "dataset_query": {
-                    "type": "native",
-                    "native": {
-                      "query": Path(file).open().read().format(stripe_schema=self.config['stripe']['schema']),
-                    },
-                    "database": db_id
-                  },
-                  "display": "table",
-                  "description": None,
-                  "visualization_settings": {},
-                  "collection_id": collection_id,
-                }
+        while sql_dependencies:
+            for file in sql_dependencies:
+                if sql_dependencies[file].issubset(created):
+                    break  # Found one with all dependencies satisified, so we can create it.
 
-                if model_id:
-                    mb_client.put(f'card/{model_id}', json=model_json)
-                    print('\t- Updated existing model', name, 'at',
-                          self.config['metabase']['url'] + f'model/{model_id}')
+            else:
+                exit(f'ERROR: Unable to create model for {file.name} due to missing dependencies: '
+                     + ', '.join(sql_dependencies[file] - set(created)))
 
-                else:
-                    resp = mb_client.post('card', json=model_json)
-                    model_id = resp['id']
-                    print('\t- Created new model', name, 'at', self.config['metabase']['url'] + f'model/{model_id}')
+            ref_name = file.name.split('.')[0]
+            name = ref_name.replace('_', ' ').title()
+            model_id = existing_models.get(name)
+
+            if model_id and not force:
+                print('\t- Model', name, 'already exists. Use --force to update it')
+                sql_dependencies.pop(file)
+                created[ref_name] = '{{' + f'#{model_id}' + '}} ' + ref_name
+                models[ref_name] = model_id
+                continue
+
+            template_tags = {}
+            for dependent in sql_dependencies[file]:
+                if dependent in models:
+                    hash_model_id = f'#{models[dependent]}'
+                    template_tags[hash_model_id] = {
+                      "type": "card",
+                      "name": hash_model_id,
+                      "id": str(uuid4()),
+                      "display-name": hash_model_id,
+                      "card-id": models[dependent]
+                    }
+            model_json = {
+              "name": name,
+              "dataset": True,
+              "dataset_query": {
+                "type": "native",
+                "native": {
+                  "query": Path(file).open().read().format(**created),
+                  "template-tags": template_tags
+                },
+                "database": db_id
+              },
+              "display": "table",
+              "description": None,
+              "visualization_settings": {},
+              "collection_id": collection_id,
+            }
+
+            if model_id:
+                mb_client.put(f'card/{model_id}', json=model_json)
+                print('\t- Updated existing model', name, 'at',
+                      self.config['metabase']['url'] + f'model/{model_id}')
+
+            else:
+                resp = mb_client.post('card', json=model_json)
+                model_id = resp['id']
+                print('\t- Created new model', name, 'at', self.config['metabase']['url'] + f'model/{model_id}')
+
+            sql_dependencies.pop(file)
+            created[ref_name] = '{{' + f'#{model_id}' + '}} ' + ref_name
+            models[ref_name] = model_id
 
         print('TODO: Create more models that will be used directly in the GSheets below and save urls to config.yml')
+
+    def _extract_dependencies_from_sql(self, sql):
+        """ Return a set of formatted variable names (e.g. {key}) from the given SQL """
+        regex = re.compile('{(\w+)}')
+        return set(regex.findall(sql))
