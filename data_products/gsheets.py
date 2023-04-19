@@ -98,7 +98,8 @@ def create_gsheets():
                     }
                 ]
             }
-            response = service.spreadsheets().batchUpdate(spreadsheetId=SAMPLE_SPREADSHEET_ID, body=sheet_body).execute()
+            response = service.spreadsheets().batchUpdate(spreadsheetId=SAMPLE_SPREADSHEET_ID,
+                                                          body=sheet_body).execute()
 
             # Get the sheet ID of the new sheet
             sheet_id = response['replies'][0]['addSheet']['properties']['sheetId']
@@ -111,10 +112,13 @@ def create_gsheets():
                 },
                 'userEnteredFormat': {
                     'numberFormat': {
-                        'type': 'NUMBER'
+                        # 'type': 'NUMBER'
+                        'type': 'DATE',
+                        'pattern': 'yyyy-mm-dd'
                     }
                 }
             }
+
             cell_range = {
                 'sheetId': sheet_id,
                 'startRowIndex': 0,
@@ -134,42 +138,54 @@ def create_gsheets():
             }
             response = service.spreadsheets().batchUpdate(spreadsheetId=SAMPLE_SPREADSHEET_ID, body=body).execute()
 
+            # DATE FORMATTING
 
-            # requests = [
-            #     {
-            #         'addSheet': {
-            #             'properties': {
-            #                 'title': key,
-            #             },
-            #         },
-            #     },
-            #     {
-            #         'setDataValidation': {
-            #             'rule': {
-            #                 'condition': {
-            #                     'type': 'CUSTOM_FORMULA',
-            #                     'values': [
-            #                         {
-            #                             'userEnteredValue': f'=IMPORTDATA("{value}")',
-            #                         },
-            #                     ],
-            #                 },
-            #                 'inputMessage': 'Imported Data',
-            #             },
-            #         },
-            #     },
-            # ]
-            #
-            # # Send the batch update request to create the new sheet
-            # try:
-            #     response = service.spreadsheets().batchUpdate(
-            #         spreadsheetId=SAMPLE_SPREADSHEET_ID,
-            #         body={'requests': requests}
-            #     ).execute()
-            #     print(f"Sheet '{key}' with IMPORTDATA URL '{tabs_json[key]}' has been created.")
-            # except HttpError as error:
-            #     print(f"An error occurred: {error}")
+            # Get the sheet ID of the new sheet
+            # Get the data range of the first row
+            data_range = f"{key}!1:1"
+            request = service.spreadsheets().values().batchGet(spreadsheetId=SAMPLE_SPREADSHEET_ID, ranges=[data_range],
+                                                               valueRenderOption='UNFORMATTED_VALUE')
+            response = request.execute()
+            values = response['valueRanges'][0]['values'][0]
 
+            # Format the first row if the cells are dates
+            cell_updates = []
+            for i, cell_value in enumerate(values):
+                cell_range = {
+                    'sheetId': sheet_id,
+                    'startRowIndex': 0,
+                    'startColumnIndex': i,
+                    'endRowIndex': 1,
+                    'endColumnIndex': i + 1
+                }
+
+                if '/' in str(cell_value):
+                    date_obj = datetime.datetime.strptime(str(cell_value), '%m/%d/%Y').date()
+                    formatted_date = date_obj.strftime('%Y-%m-%d')
+                    cell_updates.append({
+                        'repeatCell': {
+                            'range': cell_range,
+                            'cell': {
+                                'userEnteredValue': {
+                                    'stringValue': formatted_date
+                                },
+                                'userEnteredFormat': {
+                                    'numberFormat': {
+                                        'type': 'DATE',
+                                        'pattern': 'yyyy-mm-dd'
+                                    }
+                                }
+                            },
+                            'fields': 'userEnteredValue.stringValue,userEnteredFormat.numberFormat'
+                        }
+                    })
+
+            # Apply cell formatting changes, if any
+            if cell_updates:
+                body = {
+                    'requests': cell_updates
+                }
+                response = service.spreadsheets().batchUpdate(spreadsheetId=SAMPLE_SPREADSHEET_ID, body=body).execute()
 
         if sheet_exists:
             print('TODO: check to see if the URL has changed to update the sheet')
