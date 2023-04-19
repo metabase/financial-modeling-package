@@ -1,10 +1,7 @@
 with final as (
   select
     price.id
-    -- TODO: Add mapping
-    --, case price.id
-    --    else 'other'
-    --  end as name
+    , product.name as name  -- TODO: Allow user to customize this via config.yml
     , price.created as created_at
     , price.active as is_active
     , nickname as description

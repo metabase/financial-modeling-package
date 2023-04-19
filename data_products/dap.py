@@ -54,13 +54,13 @@ class DAP:
 
         print(f'Created {self.CONFIG_FILE} -- feel free to modify it if needed')
 
-    def create(self, force=False):
+    def create(self, force=False, model=None):
         """ Create data products based on configuration file. """
-        self._create_models(force=force)
+        self._create_models(force=force, model=model)
 
         print('TODO: Create Excel sheet with financial models')
 
-    def _create_models(self, force=False):
+    def _create_models(self, force=False, model=None):
         """ Create Metabase models """
         mb_client = MetabaseClient(self.config['metabase']['url'], self.config['metabase']['username'],
                                    self.config['metabase']['password'])
@@ -160,6 +160,9 @@ class DAP:
             sql_dependencies.pop(file)
             created[ref_name] = '{{' + f'#{model_id}' + '}}'
             models[ref_name] = model_id
+
+            if model_id == model:
+                exit()
 
         print('TODO: Create more models that will be used directly in the GSheets below and save urls to config.yml')
 
