@@ -15,6 +15,7 @@ def setup():
 
 
 @cli.command(help='Create data products')
-def create():
+@click.option('--force', is_flag=True, help='Force the creation of everything by overriding existing if needed')
+def create(force):
     dap = DAP()
-    dap.create()
+    dap.create(force=force)

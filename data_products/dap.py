@@ -51,13 +51,13 @@ class DAP:
 
         print(f'Created {self.CONFIG_FILE} -- feel free to modify it if needed')
 
-    def create(self):
+    def create(self, force=False):
         """ Create data products based on configuration file. """
-        self._create_models()
+        self._create_models(force=force)
 
         print('TODO: Create Excel sheet with financial models')
 
-    def _create_models(self):
+    def _create_models(self, force=False):
         """ Create Metabase models """
         mb_client = MetabaseClient(self.config['metabase']['url'], self.config['metabase']['username'],
                                    self.config['metabase']['password'])
@@ -80,10 +80,9 @@ class DAP:
 
         except IndexError:
             resp = mb_client.post('collection', json={'name': self.config['models']['collection'],
-                                                        'parent_id': 'root',
-                                                        'color': '#509EE3'})
+                                                      'color': '#509EE3'})
             collection_id = resp['id']
-            print('\t - Created new collection', self.config['models']['collection'], 'at',
+            print('\t- Created new collection', self.config['models']['collection'], 'at',
                   self.config['metabase']['url'] + f'collection/{collection_id}')
 
         resp = mb_client.get(f'collection/{collection_id}/items')
@@ -92,8 +91,10 @@ class DAP:
         for folder in self.sqls_path.iterdir():
             for file in folder.glob('*.sql'):
                 name = file.name.split('.')[0].replace('_', ' ').title()
-                if name in existing_models:
-                    print('\t- Model', name, 'already exists')
+                model_id = existing_models.get(name)
+
+                if model_id and not force:
+                    print('\t- Model', name, 'already exists. Use --force to update it')
                     continue
 
                 model_json = {
@@ -111,7 +112,15 @@ class DAP:
                   "visualization_settings": {},
                   "collection_id": collection_id,
                 }
-                resp = mb_client.post('card', json=model_json)
-                print('\t- Created new model', name, 'at', self.config['metabase']['url'] + 'model/' + str(resp['id']))
+
+                if model_id:
+                    mb_client.put(f'card/{model_id}', json=model_json)
+                    print('\t- Updated existing model', name, 'at',
+                          self.config['metabase']['url'] + f'model/{model_id}')
+
+                else:
+                    resp = mb_client.post('card', json=model_json)
+                    model_id = resp['id']
+                    print('\t- Created new model', name, 'at', self.config['metabase']['url'] + f'model/{model_id}')
 
         print('TODO: Create more models that will be used directly in the GSheets below and save urls to config.yml')
