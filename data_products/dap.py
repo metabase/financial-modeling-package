@@ -5,7 +5,6 @@ import click
 import yaml
 
 from data_products.metabase_client import MetabaseClient
-from data_products.gsheets import create_gsheets
 
 
 class DAP:
@@ -50,12 +49,16 @@ class DAP:
         with self.CONFIG_FILE.open('w') as file:
           yaml.dump(setup_dict, file)
 
-        print('TODO: Ask for GSheets API credentials')
-
         print(f'Created {self.CONFIG_FILE} -- feel free to modify it if needed')
 
     def create(self):
         """ Create data products based on configuration file. """
+        self._create_models()
+
+        print('TODO: Create Excel sheet with financial models')
+
+    def _create_models(self):
+        """ Create Metabase models """
         mb_client = MetabaseClient(self.config['metabase']['url'], self.config['metabase']['username'],
                                    self.config['metabase']['password'])
 
@@ -72,18 +75,27 @@ class DAP:
         try:
             collection_id = [c['id'] for c in mb_client.get('collection')
                              if c['name'] == self.config['models']['collection']][0]
-            print('\t- In existing collection', self.config['models']['collection'])
+            print('\t- Reusing existing collection', self.config['models']['collection'], 'at',
+                  self.config['metabase']['url'] + f'collection/{collection_id}')
 
         except IndexError:
-            resp = self.client.post('collection', json={'name': self.config['models']['collection'],
+            resp = mb_client.post('collection', json={'name': self.config['models']['collection'],
                                                         'parent_id': 'root',
                                                         'color': '#509EE3'})
             collection_id = resp['id']
-            print('\t - In new collection', self.config['models']['collection'])
+            print('\t - Created new collection', self.config['models']['collection'], 'at',
+                  self.config['metabase']['url'] + f'collection/{collection_id}')
+
+        resp = mb_client.get(f'collection/{collection_id}/items')
+        existing_models = dict((i['name'], i['id']) for i in resp['data'])
 
         for folder in self.sqls_path.iterdir():
             for file in folder.glob('*.sql'):
                 name = file.name.split('.')[0].replace('_', ' ').title()
+                if name in existing_models:
+                    print('\t- Model', name, 'already exists')
+                    continue
+
                 model_json = {
                   "name": name,
                   "dataset": True,
@@ -103,5 +115,3 @@ class DAP:
                 print('\t- Created new model', name, 'at', self.config['metabase']['url'] + 'model/' + str(resp['id']))
 
         print('TODO: Create more models that will be used directly in the GSheets below and save urls to config.yml')
-
-        create_gsheets()
