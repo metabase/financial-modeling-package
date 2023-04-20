@@ -114,3 +114,27 @@ class MetabaseClient:
 
         if not skip_return:
             return resp.json()
+
+    def query(self, db_id: int, sql: str):
+        """
+        Run the given SQL on the db and return the results
+
+        :param db_id: Database ID
+        :param sql: SQL to run
+        :return: List of lists
+        :raises RuntimeError: On any errors from running the SQL
+        """
+
+        query_json = {
+            "type": "native",
+            "native": {
+                "query": sql,
+            },
+            "database": db_id
+        }
+        resp = self.post('dataset', json=query_json)
+        if resp.get('error'):
+            raise RuntimeError(resp['error'])
+
+        return resp['data']['rows']
+

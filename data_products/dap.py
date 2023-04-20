@@ -26,12 +26,13 @@ class DAP:
         with self.CONFIG_FILE.open() as fp:
             return yaml.load(fp, Loader=yaml.Loader)
 
+    def save_config(self, config, **update):
+        config.update(update)
+        with self.CONFIG_FILE.open('w') as file:
+          yaml.dump(config, file)
+
     def setup(self):
         """ Setup configuration file for data products """
-        if (self.CONFIG_FILE.exists()
-                and not click.confirm(f'{self.CONFIG_FILE} exists. Do you want to override it?')):
-            return
-
         url = click.prompt('Enter your Metabase URL')
         username = click.prompt('Enter your Metabase username')
         password = click.prompt('Enter your Metabase password', confirmation_prompt=True, hide_input=True)
@@ -41,17 +42,33 @@ class DAP:
 
         collection = click.prompt('Enter the Metabase collection to save new models/questions to')
 
+        mb_client = MetabaseClient(url, username, password)
+        try:
+            db_id = [d['id'] for d in mb_client.get('database')['data'] if d['name'] == db][0]
+
+        except IndexError:
+            exit(f'Could not find a database connection matching "{db}". Please try again with the correct name.')
+
+        rows = mb_client.query(db_id, f"select id, name from {schema}.product")
+        products = defaultdict(dict)
+        for row in rows:
+            products[row[0]]['name'] = row[1]
+            products[row[0]]['is_main_product'] = True
+
         if not url.endswith('/'):
             url += '/'
 
         # Write the YAML file
         setup_dict = {'metabase': {'url': url, 'username': username, 'password': password},
-                      'stripe': {'schema': schema, 'db': db},
-                      'models': {'collection': collection}}
+                      'stripe': {'schema': schema, 'db': db, 'db_id': db_id},
+                      'models': {'collection': collection},
+                      'products': dict(products)}
 
-        with self.CONFIG_FILE.open('w') as file:
-          yaml.dump(setup_dict, file)
+        if (self.CONFIG_FILE.exists()
+                and not click.confirm(f'{self.CONFIG_FILE} exists. Do you want to override it?')):
+            return
 
+        self.save_config(setup_dict)
         print(f'Created {self.CONFIG_FILE} -- feel free to modify it if needed')
 
     def create(self, force=False, model=None):
@@ -64,14 +81,6 @@ class DAP:
         """ Create Metabase models """
         mb_client = MetabaseClient(self.config['metabase']['url'], self.config['metabase']['username'],
                                    self.config['metabase']['password'])
-
-        try:
-            db_id = [db['id'] for db in mb_client.get('database')['data']
-                     if db['name'] == self.config['stripe']['db']][0]
-
-        except IndexError:
-            exit('Could not find a database connection matching "' + self.config['stripe']['db']
-                 + f'". Please update {self.CONFIG_FILE} with the correct name in stripe -> db')
 
         print('Creating models')
 
@@ -139,7 +148,7 @@ class DAP:
                   "query": Path(file).open().read().format(**created),
                   "template-tags": template_tags
                 },
-                "database": db_id
+                "database": self.config['stripe']['db_id']
               },
               "display": "table",
               "description": None,
