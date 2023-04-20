@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import datetime
 import os.path
 import json
 
@@ -73,18 +74,17 @@ def create_gsheets():
     except HttpError as err:
         print(err)
 
-
     # Generate the tabs if they don't exist and update them if they do
 
     print('TODO: Create GSheet Tabs Dynamically & Import Data')
     for key, value in tabs_json.items():
-        #the key here is the name of the Metabase Question and the value is the URL of the question
+        # the key here is the name of the Metabase Question and the value is the URL of the question
 
         sheets = service.spreadsheets().get(spreadsheetId=SAMPLE_SPREADSHEET_ID).execute().get('sheets', [])
         sheet_exists = any(sheet['properties']['title'] == key for sheet in sheets)
 
-        #if the tab does not exist then generate it
-        if sheet_exists == False:
+        # if the tab does not exist then generate it
+        if sheet_exists is False:
 
             # Create a new sheet in the spreadsheet & set the title
             sheet_body = {

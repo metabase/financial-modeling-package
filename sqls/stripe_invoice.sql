@@ -1,6 +1,7 @@
 with final as (
   select
-    id
+    invoice.id
+    , customer.name as customer_name
     , number as reference_number
     , created as created_at
     , period_start as period_started_at
@@ -22,7 +23,10 @@ with final as (
     , subscription_id
     , charge_id
   from {stripe_schema}.invoice
+  left join {stripe_customer} customer
+    on invoice.customer_id = customer.id
   where livemode and not is_deleted
+
 )
 
 select * from final
