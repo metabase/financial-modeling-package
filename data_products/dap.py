@@ -8,6 +8,7 @@ import click
 import yaml
 
 from data_products.metabase_client import MetabaseClient
+from data_products.excel_pivot import create_excel
 
 
 class DAP:
@@ -75,7 +76,7 @@ class DAP:
         """ Create data products based on configuration file. """
         self._create_models(force=force, model=model)
 
-        print('TODO: Create Excel sheet with financial models')
+        create_excel(csv_url=self.config['test_data']['csv_url'])
 
     def _create_models(self, force=False, model=None):
         """ Create Metabase models """

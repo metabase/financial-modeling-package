@@ -137,4 +137,3 @@ class MetabaseClient:
             raise RuntimeError(resp['error'])
 
         return resp['data']['rows']
-
