@@ -168,5 +168,5 @@ class DAP:
 
     def _extract_dependencies_from_sql(self, sql):
         """ Return a set of formatted variable names (e.g. {key}) from the given SQL """
-        regex = re.compile('{(\w+)}')
+        regex = re.compile(r'{(\w+)}')
         return set(regex.findall(sql))
