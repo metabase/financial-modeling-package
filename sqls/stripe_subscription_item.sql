@@ -1,19 +1,28 @@
-with item_price as (
+with price_tier as (
+  select
+    id as price_id
+    , flat_amount::float / 100 as flat_amount
+    , unit_amount::float / 100 as unit_amount
+    , up_to as up_to_quantity
+    , index as order_index
+  from {stripe_schema}.tier
+
+), item_price as (
   select
     item.id as item_id
     , billing_scheme
     , quantity
     , price.unit_amount
-    , tier.flat_amount as tier_flat_amount
-    , tier.unit_amount as tier_unit_amount
+    , price_tier.flat_amount as tier_flat_amount
+    , price_tier.unit_amount as tier_unit_amount
     , up_to_quantity as tier_up_to_quantity
     , lag(up_to_quantity) over (partition by item.id order by order_index) as tier_last_up_to_quantity
     , order_index
   from {stripe_schema}.subscription_item item
   left join {stripe_price} price
     on item.plan_id = price.id
-  left join {stripe_price_tier} tier
-    on price.id = tier.price_id
+  left join  price_tier
+    on price.id = price_tier.price_id
 
 ), item_tiered_amount as (
   select
@@ -42,8 +51,8 @@ with item_price as (
   select
     item.id
     , created as created_at
-    , price.name as price_name
     , price.product_name
+    , price.is_main_product
     , price.billing_scheme as price_billing_scheme
     , price.recurring_interval as price_recurring_interval
     , price.recurring_interval_count as price_recurring_interval_count
