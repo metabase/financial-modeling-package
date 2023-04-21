@@ -34,14 +34,22 @@ class DAP:
 
     def setup(self):
         """ Setup configuration file for data products """
-        url = click.prompt('Enter your Metabase URL')
-        username = click.prompt('Enter your Metabase username')
+        try:
+            config = self.config
+        except Exception:
+            config = {}
+
+        url = click.prompt('Enter your Metabase URL', default=config.get('metabase', {}).get('url'))
+        username = click.prompt('Enter your Metabase username', default=config.get('metabase', {}).get('username'))
         password = click.prompt('Enter your Metabase password', confirmation_prompt=True, hide_input=True)
 
-        schema = click.prompt('Enter your Stripe schema name ingested by Fivetran')
-        db = click.prompt('Enter the database connection name in Metabase that contains the Stripe schema')
+        schema = click.prompt('Enter your Stripe schema name ingested by Fivetran',
+                              default=config.get('stripe', {}).get('schema'))
+        db = click.prompt('Enter the database connection name in Metabase that contains the Stripe schema',
+                          default=config.get('stripe', {}).get('db'))
 
-        collection = click.prompt('Enter the Metabase collection to save new models/questions to')
+        collection = click.prompt('Enter the Metabase collection to save new models/questions to',
+                                  default=config.get('models', {}).get('collection'))
 
         mb_client = MetabaseClient(url, username, password)
         try:
@@ -61,17 +69,17 @@ class DAP:
 
         # Write the YAML file
         setup_dict = {'metabase': {'url': url, 'username': username, 'password': password},
-                      'stripe': {'schema': schema, 'db': db, 'db_id': db_id},
-                      'models': {'collection': collection},
-                      'products': dict(products)}
+                      'stripe': {'schema': schema, 'db': db, 'db_id': db_id, 'products': dict(products)},
+                      'models': {'collection': collection}
+                      }
 
         if (self.CONFIG_FILE.exists()
                 and not click.confirm(f'{self.CONFIG_FILE} exists. Do you want to override it?')):
             return
 
         self.save_config(setup_dict)
-        print(f'Created {self.CONFIG_FILE} with list Stripe products.\n')
-        print('Please edit it to update the product names and indicate if it is a main product or not.\n'
+        print(f'Created {self.CONFIG_FILE} with a list of all Stripe products.\n')
+        print('Please edit it to update the Stripe product names and indicate if it is a main product or not.\n'
               'A main product will be included in the financial reports while other products will be\n'
               'collapsed and aggregated as part of the main product in the same subscription')
 
@@ -109,7 +117,17 @@ class DAP:
         for file in self.sqls_path.glob('*.sql'):
             sql_dependencies[file] = self._extract_dependencies_from_sql(file.open().read())
 
-        created = {'stripe_schema': self.config['stripe']['schema']}
+        products_names = []
+        products_mains = []
+        for product_id, product in self.config['stripe']['products'].items():
+            products_names.append(f"""when product.id = '{product_id}' then '{product["name"]}'""")
+            products_mains.append(f"""when product.id = '{product_id}' then """
+                                  f"""{str(product["is_main_product"]).lower()}""")
+
+        created = {'stripe_schema': self.config['stripe']['schema'],
+                   'stripe_product_names': '\n        '.join(products_names),
+                   'stripe_product_mains': '\n        '.join(products_mains)
+                   }
         models = {}
 
         while sql_dependencies:
@@ -162,6 +180,7 @@ class DAP:
 
             if model_id:
                 mb_client.put(f'card/{model_id}', json=model_json)
+                mb_client.post(f'card/{model_id}/refresh', skip_return=True)
                 print('\t- Updated existing model', name, 'at',
                       self.config['metabase']['url'] + f'model/{model_id}')
 
