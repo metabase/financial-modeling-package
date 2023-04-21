@@ -1,7 +1,6 @@
 import requests
 import os
 from openpyxl import Workbook
-from openpyxl import pivot
 
 # Define the URL of the CSV file
 def create_excel(csv_url=os.environ.get('CSV_URL')):
