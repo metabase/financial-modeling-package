@@ -1,11 +1,11 @@
 with final as (
   select
     price.id
-    , product.name as name  -- TODO: Allow user to customize this via config.yml
+    , product.name as product_name
     , price.created as created_at
     , price.active as is_active
+    , true as is_main_product
     , nickname as description
-    , product.name as product_name
     , price.type
     , billing_scheme
     , case
