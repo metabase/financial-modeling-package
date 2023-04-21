@@ -1,6 +1,8 @@
 with final as (
   select
-    id
+    invoice.id
+    , customer.name as customer_name
+    , product_name
     , number as reference_number
     , created as created_at
     , period_start as period_started_at
@@ -9,8 +11,8 @@ with final as (
     , paid as is_paid
     , auto_advance as is_auto_advance
     , attempted as is_attempted
-    , status
-    , collection_method
+    , invoice.status
+    , invoice.collection_method
     , total::float / 100 as total
     , amount_due::float / 100 as amount_due
     , amount_paid::float / 100 as amount_paid
@@ -21,8 +23,13 @@ with final as (
     , customer_id
     , subscription_id
     , charge_id
-  from {{{{ source('{stripe_source}', 'invoice') }}}}
+  from {stripe_schema}.invoice
+  left join {stripe_customer} customer
+    on invoice.customer_id = customer.id
+  left join {stripe_subscription} subscription
+    on invoice.subscription_id = subscription.id
   where livemode and not is_deleted
+
 )
 
 select * from final

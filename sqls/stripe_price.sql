@@ -1,14 +1,11 @@
 with final as (
   select
     price.id
-    , case price.id
-        when '{stripe_price_id}' then '{stripe_price_name}'
-        else 'other'
-      end as name
+    , product.name as product_name
     , price.created as created_at
     , price.active as is_active
+    , true as is_main_product
     , nickname as description
-    , product.name as product_name
     , price.type
     , billing_scheme
     , case
@@ -23,8 +20,8 @@ with final as (
     , recurring_interval_count
     , unit_amount::float / 100 as unit_amount
     , product_id
-  from {{{{ source('{stripe_source}', 'price') }}}}
-  left join {{{{ source('{stripe_source}', 'product') }}}}
+  from {stripe_schema}.price
+  left join {stripe_schema}.product
     on price.product_id = product.id
   where price.livemode and not price.is_deleted
 
