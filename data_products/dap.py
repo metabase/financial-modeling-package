@@ -70,7 +70,10 @@ class DAP:
             return
 
         self.save_config(setup_dict)
-        print(f'Created {self.CONFIG_FILE} -- feel free to modify it if needed')
+        print(f'Created {self.CONFIG_FILE} with list Stripe products.\n')
+        print('Please edit it to update the product names and indicate if it is a main product or not.\n'
+              'A main product will be included in the financial reports while other products will be\n'
+              'collapsed and aggregated as part of the main product in the same subscription')
 
     def create(self, force=False, model=None):
         """ Create data products based on configuration file. """
