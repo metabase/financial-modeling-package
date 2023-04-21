@@ -25,6 +25,7 @@ with plan_amount as (  -- plan = consolidation of all prices into one
   select
     subscription.id
     , stripe_customer.name as customer_name
+    , product_name
     , subscription.created as created_at
     , billing_cycle_anchor as billing_cycle_anchored_at
     , coalesce(cancel_at, canceled_at) as cancel_at
@@ -35,7 +36,6 @@ with plan_amount as (  -- plan = consolidation of all prices into one
     , cancel_at_period_end as is_cancel_at_period_end
     , status
     , collection_method
-    , product_name
     , plan_billing_scheme
     , plan_recurring_interval
     , plan_recurring_interval_count

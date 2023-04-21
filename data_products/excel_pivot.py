@@ -2,6 +2,7 @@ import requests
 import os
 from openpyxl import Workbook
 
+
 # Define the URL of the CSV file
 def create_excel(csv_url=os.environ.get('CSV_URL')):
     # Fetch the CSV data from the URL
@@ -38,7 +39,8 @@ def create_excel(csv_url=os.environ.get('CSV_URL')):
         pivot_table[plan_name][recognized_at] = monthly_revenue
 
     # sort the recognized at dates in ascending order
-    recognized_at_dates = sorted(list(set([date for plan in pivot_table.values() for date in plan.keys() if date is not None])))
+    recognized_at_dates = sorted(list(set([date for plan in pivot_table.values()
+                                           for date in plan.keys() if date is not None])))
 
     # create the header row for the pivot table
     header_row = ['plan_name'] + recognized_at_dates

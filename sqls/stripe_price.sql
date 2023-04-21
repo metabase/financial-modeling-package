@@ -1,10 +1,16 @@
 with final as (
   select
     price.id
-    , product.name as product_name
+    , case
+        {stripe_product_names}
+        else product.name
+      end as product_name
     , price.created as created_at
     , price.active as is_active
-    , true as is_main_product
+    , case
+        {stripe_product_mains}
+        else true
+      end as is_main_product
     , nickname as description
     , price.type
     , billing_scheme
