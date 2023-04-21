@@ -1,52 +1,10 @@
-# import requests
-# import io
-# from openpyxl import Workbook
-# from openpyxl.utils.dataframe import dataframe_to_rows
-#
-# # Define the URL of the CSV file
-# csv_url = '<snip>'
-#
-# # Fetch the CSV data from the URL
-# response = requests.get(csv_url)
-# csv_data = response.content.decode('utf-8')
-#
-# # Load the CSV data into a new workbook in memory
-# wb = Workbook()
-# ws = wb.active
-# rows = csv_data.split('\n')
-# for r in rows:
-#     ws.append(r.split(','))
-#
-# # Pivot the table
-# ws_pivot = wb.create_sheet('Pivoted Table')
-# ws_pivot['A1'] = 'Plan Name'
-# month_cols = ws.iter_cols(min_row=1, max_row=1, min_col=3)
-# for col in month_cols:
-#     ws_pivot.cell(row=1, column=col[0].column).value = col[0].value
-# plan_names = ws.iter_cols(min_row=2, max_row=ws.max_row, min_col=1, max_col=1)
-# for name in plan_names:
-#     plan_row = ws_pivot.max_row + 1
-#     ws_pivot.cell(row=plan_row, column=1).value = name[0].value
-#     for col in month_cols:
-#         month = col[0].value
-#         monthly_revenue = ws.cell(row=name[0].row, column=col[0].column).value
-#         ws_pivot.cell(row=plan_row, column=col[0].column).value = monthly_revenue
-#
-# wb.save('pivoted_table.xlsx')
-# # Save the Excel workbook
-
-
-# TEST 2
-
-
 import requests
 import os
 from openpyxl import Workbook
-
+from openpyxl import pivot
 
 # Define the URL of the CSV file
 def create_excel(csv_url=os.environ.get('CSV_URL')):
-
     # Fetch the CSV data from the URL
     response = requests.get(csv_url)
     csv_data = response.content.decode('utf-8')
@@ -54,6 +12,7 @@ def create_excel(csv_url=os.environ.get('CSV_URL')):
     # Load the CSV data into a new workbook in memory
     wb = Workbook()
     ws = wb.active
+
     rows = csv_data.split('\n')
     for r in rows:
         ws.append(r.split(','))
@@ -61,39 +20,52 @@ def create_excel(csv_url=os.environ.get('CSV_URL')):
     # Pivot the table using the Excel API
     ws_pivot = wb.create_sheet('Pivoted Table')
 
-    # Set up the header row
-    ws_pivot['A1'] = 'Plan Name'
-    month_cols = ws.iter_cols(min_row=1, max_row=ws.max_row, min_col=3)
-    for col in month_cols:
-        ws_pivot.cell(row=1, column=col[0].column).value = col[0].value
-        # print('col[0].value', col[0].value)
+    # create a dictionary to store the pivot table data
+    pivot_table = {}
 
-    # print('month_cols:', month_cols)
-    # Loop over the plan names and fill in the pivoted table
-    plan_names = ws.iter_cols(min_row=2, max_row=ws.max_row, min_col=1, max_col=1)
-    for name in plan_names:
-        plan_row = ws_pivot.max_row + 1
-        ws_pivot.cell(row=plan_row, column=1).value = name[0].value
+    # iterate over each row of the worksheet, starting from the second row
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        # get the plan name, recognized at date, and monthly revenue
+        plan_name = row[0]
+        recognized_at = row[1]
+        monthly_revenue = row[2]
 
-        # print('plan_row:', plan_row)
-        # print('name[0].value:', name[0].value)
-        # print('name:', name)
+        # check if the plan name is already in the pivot table dictionary
+        if plan_name not in pivot_table:
+            # if not, add a new dictionary entry for the plan name
+            pivot_table[plan_name] = {}
 
-        # Loop over the months and fill in the monthly revenue values
-        for col in month_cols:
-            month = col[0].value
-            monthly_revenue = ws.cell(row=name[0].row, column=col[0].column).value
-            month_column_index = col[0].column
+        # set the monthly revenue for the recognized at date and plan name
+        pivot_table[plan_name][recognized_at] = monthly_revenue
 
-            # print('month:', month)
-            # print('monthly_revenue', monthly_revenue)
+    # sort the recognized at dates in ascending order
+    recognized_at_dates = sorted(list(set([date for plan in pivot_table.values() for date in plan.keys() if date is not None])))
 
-            # If the column for the month doesn't exist yet, add it
-            if not ws_pivot.cell(row=1, column=month_column_index).value:
-                ws_pivot.cell(row=1, column=month_column_index).value = month
-                # print('in loop if does not exist yet')
-            # Fill in the monthly revenue value for the corresponding plan and month
-            ws_pivot.cell(row=plan_row, column=month_column_index).value = monthly_revenue
+    # create the header row for the pivot table
+    header_row = ['plan_name'] + recognized_at_dates
+
+    # create a list to store the rows of the pivot table
+    pivot_rows = [header_row]
+
+    # iterate over each plan in the pivot table dictionary
+    for plan_name, plan_data in pivot_table.items():
+        # create a new row for the pivot table
+        row = [plan_name]
+
+        # iterate over each recognized at date in the pivot table
+        for recognized_at in recognized_at_dates:
+            # get the monthly revenue for the recognized at date and plan name
+            monthly_revenue = plan_data.get(recognized_at, '')
+
+            # add the monthly revenue to the row
+            row.append(monthly_revenue)
+
+        # add the row to the pivot table
+        pivot_rows.append(row)
+
+    # write the pivot table to the worksheet
+    for row in pivot_rows:
+        ws_pivot.append(row)
 
     print('TODO: Support dynamic import via URL, do pivot, and create financial models sheet')
 
