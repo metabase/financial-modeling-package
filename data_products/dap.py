@@ -99,14 +99,14 @@ class DAP:
         try:
             collection_id = [c['id'] for c in mb_client.get('collection')
                              if c['name'] == self.config['models']['collection']][0]
-            print('\t- Reusing existing collection', self.config['models']['collection'], 'at',
+            print('\t* Reusing existing collection', self.config['models']['collection'], 'at',
                   self.config['metabase']['url'] + f'collection/{collection_id}')
 
         except IndexError:
             resp = mb_client.post('collection', json={'name': self.config['models']['collection'],
                                                       'color': '#509EE3'})
             collection_id = resp['id']
-            print('\t- Created new collection', self.config['models']['collection'], 'at',
+            print('\t* Created new collection', self.config['models']['collection'], 'at',
                   self.config['metabase']['url'] + f'collection/{collection_id}')
 
         resp = mb_client.get(f'collection/{collection_id}/items')
@@ -114,7 +114,7 @@ class DAP:
 
         # Generate dependencies
         sql_dependencies = defaultdict(set)
-        for file in self.sqls_path.glob('*.sql'):
+        for file in self.sqls_path.glob('**/*.sql'):
             sql_dependencies[file] = self._extract_dependencies_from_sql(file.open().read())
 
         products_names = []
@@ -140,11 +140,14 @@ class DAP:
                      + ', '.join(sql_dependencies[file] - set(created)))
 
             ref_name = file.name.split('.')[0]
-            name = ref_name.replace('_', ' ').title()
+            name = ref_name.replace('_', ' ').title().replace('Arr', 'ARR')
             model_id = existing_models.get(name)
+            is_public_question = '/public/' in str(file)
+            is_model = not is_public_question
+            model_or_question = 'model' if is_model else 'question'
 
             if model_id and not force:
-                print('\t- Model', name, 'already exists. Use --force to update it')
+                print('\t* Model', name, 'already exists. Use --force to update it')
                 sql_dependencies.pop(file)
                 created[ref_name] = '{{' + f'#{model_id}' + '}}'
                 models[ref_name] = model_id
@@ -163,7 +166,7 @@ class DAP:
                     }
             model_json = {
               "name": name,
-              "dataset": True,
+              "dataset": is_model,
               "dataset_query": {
                 "type": "native",
                 "native": {
@@ -180,14 +183,23 @@ class DAP:
 
             if model_id:
                 mb_client.put(f'card/{model_id}', json=model_json)
-                mb_client.post(f'card/{model_id}/refresh', skip_return=True)
-                print('\t- Updated existing model', name, 'at',
-                      self.config['metabase']['url'] + f'model/{model_id}')
+                if is_model:
+                    mb_client.post(f'card/{model_id}/refresh', skip_return=True)
+                print(f'\t* Updated existing {model_or_question}', name, 'at',
+                      self.config['metabase']['url'] + f'{model_or_question}/{model_id}')
 
             else:
                 resp = mb_client.post('card', json=model_json)
                 model_id = resp['id']
-                print('\t- Created new model', name, 'at', self.config['metabase']['url'] + f'model/{model_id}')
+                print(f'\t* Created new {model_or_question}', name, 'at',
+                      self.config['metabase']['url'] + f'{model_or_question}/{model_id}')
+
+            # Turn on public sharing
+            if is_public_question:
+                resp = mb_client.post(f'card/{model_id}/public_link')
+                uuid = resp['uuid']
+                print('\t\t- Publicly shared at',
+                      self.config['metabase']['url'] + f'public/question/{uuid}.csv')
 
             sql_dependencies.pop(file)
             created[ref_name] = '{{' + f'#{model_id}' + '}}'
