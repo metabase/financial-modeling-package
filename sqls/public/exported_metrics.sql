@@ -1,7 +1,7 @@
 with arr as (
     select
         quarter
-        , date(unformatted_quarter) as unformatted_quarter
+        , date(quarter_at) as quarter_at
         , concat(status, ' ARR') as metric
         , arr as value
     from {quarterly_arr_and_customers} arr
@@ -9,7 +9,7 @@ with arr as (
 ), customers as (
     select
         quarter
-        , date(unformatted_quarter) as unformatted_quarter
+        , date(quarter_at) as quarter_at
         , concat(status, ' Customers') as metric
         , customers as value
     from {quarterly_arr_and_customers} customers
