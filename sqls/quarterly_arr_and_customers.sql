@@ -36,7 +36,7 @@ select
   , stripe_subscription_id
   , stripe_customer_id
   , customer_name
-  , date_trunc('quarter', month) as unformatted_quarter
+  , date_trunc('quarter', month) as quarter_at
   , sum(total_per_subscription) as total_per_subscription
   , sum(total_per_customer) as total_per_customer
   , max(is_new) as is_new
@@ -49,7 +49,7 @@ group by 1,2,3,4,5
 
 select
     quarter,
-    unformatted_quarter,
+    quarter_at,
     'New' as status,
     4*sum(total_per_customer) as arr, -- since we are doing per quarter and not per month, we multiply by 4
     count(distinct stripe_customer_id) as customers
@@ -62,7 +62,7 @@ select
 
 select
     quarter,
-    unformatted_quarter,
+    quarter_at,
     'Churned' as status,
     4*sum(total_per_customer) as arr,
     count(distinct stripe_customer_id) as customers
@@ -75,7 +75,7 @@ select
 
 select
     quarter,
-    unformatted_quarter,
+    quarter_at,
     'Retained' as status,
     4*sum(total_per_customer) as arr,
     count(distinct stripe_customer_id) as customers
@@ -90,4 +90,4 @@ select
 from quarters_arr_new_customers
 UNION select * from quarters_arr_churned_customers
 UNION select * from quarters_arr_retained_customers
-order by unformatted_quarter desc
+order by quarter_at desc
