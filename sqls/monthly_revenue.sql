@@ -1,4 +1,4 @@
-with monthly_self_service_invoices as (
+with monthly_invoices as (
    select
      invoice.total as amount
      , invoice.period_ended_at::date as date
@@ -17,10 +17,11 @@ with monthly_self_service_invoices as (
    left join {stripe_price} price
      on price.product_id = subscription.product_id
    where invoice.total > 0 -- there's one refund a bunch of zero dollar orders
+   and subscription.plan_recurring_interval = 'month'
    and invoice.status not in ('uncollectible', 'void', 'deleted')
    and date_trunc('month', invoice.period_ended_at) <= date_trunc('month', CURRENT_DATE)
 
- ), expected_self_service_invoices_this_month as (
+ ), expected_invoices_this_month as (
    select
      last_month.amount
      , (last_month.date + interval '1 month')::date as date
@@ -31,15 +32,15 @@ with monthly_self_service_invoices as (
      , last_month.subscription_id
      , last_month.customer_name
      , last_month.is_auto_renewal
-   from monthly_self_service_invoices last_month
-   left join monthly_self_service_invoices this_month
+   from monthly_invoices last_month
+   left join monthly_invoices this_month
      on last_month.subscription_id = this_month.subscription_id
      and date_trunc('month', last_month.date) + interval '1 month' = date_trunc('month', this_month.date)
    where last_month.is_auto_renewal
      and date_trunc('month', last_month.date) + interval '1 month' = date_trunc('month', CURRENT_DATE)
      and this_month.date is null
 
- ), annual_self_service_invoices as (
+ ), annual_invoices as (
    select invoice.total as amount,
          invoice.period_ended_at::date as date
          , subscription.current_period_end_at as subscription_period_end
@@ -62,10 +63,10 @@ with monthly_self_service_invoices as (
      and invoice.status not in ('uncollectible', 'deleted', 'void')
      and date_trunc('month', invoice.period_ended_at) <= date_trunc('month', CURRENT_DATE)
 
- ), annual_self_service_invoices_to_monthly as (
+ ), annual_invoices_to_monthly as (
    select
      (date + month_offset * interval '1 month')::date as date
-     , 'yearly' as billing_cycle
+     , 'annually' as billing_cycle
      , product_name
      , amount::float/12 as amount
      , true as is_actual
@@ -74,12 +75,12 @@ with monthly_self_service_invoices as (
      , subscription_id
      , customer_name
      , product_id
-   from annual_self_service_invoices
+   from annual_invoices
    join generate_series(0, 11) as month_offset
      on date + month_offset * interval '1 month' < coalesce(subscription_period_end, date_trunc('month', now()) + interval '1 month')
 
  ), monthly_revenue as (
-   select
+   select distinct
      date as recognized_at
      , billing_cycle
      , product_name
@@ -90,10 +91,9 @@ with monthly_self_service_invoices as (
      , subscription_id as stripe_subscription_id
      , customer_name
      , product_id as stripe_product_id
-     , null as account_id
-   from monthly_self_service_invoices
+   from monthly_invoices
    union all
-   select
+   select distinct
      date as recognized_at
      , billing_cycle
      , product_name
@@ -104,10 +104,9 @@ with monthly_self_service_invoices as (
      , subscription_id as stripe_subscription_id
      , customer_name
      , product_id as stripe_product_id
-     , null as account_id
-   from expected_self_service_invoices_this_month
+   from expected_invoices_this_month
    union all
-   select
+   select distinct
      date as recognized_at
      , billing_cycle
      , product_name
@@ -118,8 +117,7 @@ with monthly_self_service_invoices as (
      , subscription_id as stripe_subscription_id
      , customer_name
      , product_id as stripe_product_id
-     , null as account_id
-   from annual_self_service_invoices_to_monthly
+   from annual_invoices_to_monthly
 
  ), consolidated_monthly_revenue as (
    select
@@ -133,14 +131,13 @@ with monthly_self_service_invoices as (
      , max(stripe_subscription_id) as stripe_subscription_id
      , max(customer_name) as customer_name
      , max(stripe_product_id) as stripe_product_id
-     , max(account_id) as account_id
    from monthly_revenue
    group by date_trunc('month', recognized_at), stripe_subscription_id
 
  ),
 
  final as (
-   select
+   select distinct
      revenue.stripe_subscription_id
      , revenue.customer_name
      , revenue.recognized_at
