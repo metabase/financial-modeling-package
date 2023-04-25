@@ -1,16 +1,18 @@
 with arr as (
     select
-        month
-        , concat(product_name, ' ARR') as metric
+        quarter
+        , date(unformatted_quarter) as unformatted_quarter
+        , concat(status, ' ARR') as metric
         , arr as value
-    from {monthly_arr_and_customers} arr
+    from {quarterly_arr_and_customers} arr
 
 ), customers as (
     select
-        month
-        , concat(product_name, ' Customers') as metric
+        quarter
+        , date(unformatted_quarter) as unformatted_quarter
+        , concat(status, ' Customers') as metric
         , customers as value
-    from {monthly_arr_and_customers} customers
+    from {quarterly_arr_and_customers} customers
 
 ), final as (
     select * from arr
@@ -20,4 +22,4 @@ with arr as (
 )
 
 select * from final
-order by 1, 2
+order by 2 desc
