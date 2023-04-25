@@ -83,11 +83,18 @@ select
     where
         is_retained = 1
     group by 1,2,3
-)
 
+), unioned as (
 select
     *
 from quarters_arr_new_customers
 UNION select * from quarters_arr_churned_customers
 UNION select * from quarters_arr_retained_customers
 order by quarter_at desc
+
+)
+select
+    *
+    , lag(arr, 4) over (partition by status order by quarter_at) as last_year_arr_value
+    , lag(customers, 4) over (partition by status order by quarter_at) as last_year_customer_value
+from unioned
