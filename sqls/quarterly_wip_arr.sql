@@ -63,7 +63,7 @@ with monthly_customer_summary as (
         , quarter_at
         , sum(total_per_customer) as total_beginning
     from monthly_customer_summary
-    where is_newgit  = 0 is_downgrade + is_upgrade =0
+    where is_new  = 0 is_downgrade + is_upgrade =0
     group by 1,2
 
 ), non_collapsed as (
