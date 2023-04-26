@@ -1,6 +1,7 @@
 financial_models.xlsx
 config.yml
 venv
+.DS_Store
 
 #Google Sheet API Credentials
 .credentials.json
