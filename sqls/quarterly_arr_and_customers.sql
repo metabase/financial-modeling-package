@@ -1,27 +1,10 @@
-with month_summary as (
-  select distinct
-    date_trunc('month', recognized_at)::date as month
-    , stripe_subscription_id
-    , stripe_customer_id
-    , customer_name
-    , sum(amount) over (partition by date_trunc('month', recognized_at)::date, stripe_subscription_id) as total_per_subscription
-    , sum(amount) over (partition by date_trunc('month', recognized_at)::date, stripe_customer_id) as total_per_customer
-  from {monthly_revenue} as rev
-
-), month_summary_w_previous as (
-  select
-    *
-    , lag(total_per_customer) over (partition by stripe_subscription_id order by month) as total_per_customer_previous_month
-    , lead(total_per_customer) over (partition by stripe_subscription_id order by month) as total_per_customer_next_month
-  from month_summary
-
-), status as (
+with status as (
   select
     *
     , case when total_per_customer_previous_month is null then 1 else 0 end as is_new
     , case when total_per_customer_next_month is null then 1 else 0 end as is_churned
     , case when total_per_customer_previous_month is not null and total_per_customer is not null then 1 else 0 end as is_retained
-  from month_summary_w_previous
+  from {monthly_revenue} as rev
 
 ), quarter as (
   select
