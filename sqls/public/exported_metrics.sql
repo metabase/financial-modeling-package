@@ -35,22 +35,18 @@ with ending_arr as (
     quarter
     , quarter_at
     , 'ARR % YoY growth' as metric
-    , case
-        when last_year_arr_value is null then NULL
-        else (ending_arr - last_year_arr_value)/coalesce(last_year_arr_value, 1)
-      end as value
+    , (ending_arr - last_year_arr_value)/coalesce(last_year_arr_value, 1) value
   from {quarterly_arr_and_customers} customers
+  where last_year_arr_value is not null
 
 ), yearly_customers as (
   select distinct
     quarter
     , date(quarter_at) as quarter_at
     , 'Customers % YoY growth' as metric
-    , case
-        when last_year_customer_value is null then NULL
-        else (ending_customers - last_year_customer_value)/coalesce(last_year_customer_value, 1)
-      end as value
+    , (ending_customers - last_year_customer_value)/coalesce(last_year_customer_value, 1) as value
   from {quarterly_arr_and_customers} customers
+  where last_year_customer_value is not null
 
 ), final as (
   select * from ending_arr
