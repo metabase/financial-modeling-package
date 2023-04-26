@@ -18,7 +18,7 @@ with arr as (
   select
     quarter
     , quarter_at
-    , concat(status, ' customers % YoY growth') as metric
+    , concat(status, ' ARR % YoY growth') as metric
     , (arr - last_year_arr_value)/coalesce(last_year_arr_value, 1) as value
   from {quarterly_arr_and_customers} customers
 
@@ -26,7 +26,7 @@ with arr as (
   select
     quarter
     , date(quarter_at) as quarter_at
-    , concat(status, ' ARR % YoY growth') as metric
+    , concat(status, ' customers % YoY growth') as metric
     , (customers - last_year_customer_value)/coalesce(last_year_customer_value, 1) as value
   from {quarterly_arr_and_customers} customers
 
