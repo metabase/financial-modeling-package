@@ -79,6 +79,7 @@ with month_summary as (
   select
     *
     , sum(customers) over (partition by quarter order by quarter_at) as ending_customers
+    , sum(arr) over (partition by quarter order by quarter_at) as ending_arr
   from (
     select * from quarters_arr_new_customers
     UNION
@@ -93,17 +94,20 @@ with month_summary as (
     , quarter_at
     , status
     , arr
-    , case when status = 'Beginning' then coalesce(lag(ending_customers) over (partition by status order by quarter_at), customers)
-        when status != 'Beginning' then customers
-      end as customers
+    , customers
+--    , case when status = 'Beginning' then coalesce(lag(ending_customers) over (partition by status order by quarter_at), customers)
+--        when status != 'Beginning' then customers
+--      end as customers
+    , ending_customers
+    , ending_arr
 from unioned
 where quarter_at < date_trunc('quarter', current_date) -- remove current, incomplete quarter
 
 ), final as (
   select
     *
-    , lag(arr, 4) over (partition by status order by quarter_at) as last_year_arr_value
-    , lag(customers, 4) over (partition by status order by quarter_at) as last_year_customer_value
+    , lag(ending_arr, 4) over (partition by status order by quarter_at) as last_year_arr_value
+    , lag(ending_customers, 4) over (partition by status order by quarter_at) as last_year_customer_value
 from quarterly_arr_and_customers
 )
 
