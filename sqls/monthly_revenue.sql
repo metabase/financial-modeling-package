@@ -12,12 +12,9 @@ with monthly_invoices as (
    from {stripe_invoice} invoice
    join {stripe_subscription} subscription
     on subscription.id = invoice.subscription_id
-   left join {stripe_customer} customer
-    on customer.id = subscription.stripe_customer_id
-   left join {stripe_price} price
-     on price.product_id = subscription.product_id
-   where invoice.total > 0 -- there's one refund a bunch of zero dollar orders
+   where invoice.total > 0 -- removes refunds
    and subscription.plan_recurring_interval = 'month'
+   and subscription.plan_recurring_interval_count = 1
    and invoice.status not in ('uncollectible', 'void', 'deleted')
    and date_trunc('month', invoice.period_ended_at) <= date_trunc('month', CURRENT_DATE)
 
@@ -49,17 +46,14 @@ with monthly_invoices as (
          , subscription.cancel_at is null and not subscription.is_cancel_at_period_end as is_auto_renewal
          , subscription.product_id as product_id
          , subscription.product_name
-         , price.billing_cycle
+         , 'annually' as billing_cycle
          , invoice.customer_id as stripe_customer_id
    from {stripe_invoice} invoice
    join {stripe_subscription} subscription
     on subscription.id = invoice.subscription_id
-   left join {stripe_customer} customer
-    on customer.id = subscription.stripe_customer_id
-   left join {stripe_price} price
-     on subscription.product_id = price.product_id
    where subscription.plan_recurring_interval = 'year'
-     and invoice.total > 0 -- there's one refund a bunch of zero dollar orders
+     and subscription.plan_recurring_interval_count = 1
+     and invoice.total > 0 -- removes refunds
      and invoice.status not in ('uncollectible', 'deleted', 'void')
      and date_trunc('month', invoice.period_ended_at) <= date_trunc('month', CURRENT_DATE)
 
@@ -134,11 +128,9 @@ with monthly_invoices as (
    from monthly_revenue
    group by date_trunc('month', recognized_at), stripe_subscription_id
 
- ),
-
- final as (
+ ), final as (
    select distinct
-     revenue.stripe_subscription_id
+     md5(concat(revenue.recognized_at, revenue.stripe_subscription_id)) as id
      , revenue.customer_name
      , revenue.recognized_at
      , revenue.amount
@@ -147,11 +139,11 @@ with monthly_invoices as (
      , revenue.product_name
      , revenue.billing_cycle
      , revenue.stripe_customer_id
+     , revenue.stripe_subscription_id
      , revenue.stripe_product_id
    from consolidated_monthly_revenue revenue
    where recognized_at < date_trunc('month', current_date) + interval '1 month'
    order by recognized_at desc
-
  )
 
  select * from final
