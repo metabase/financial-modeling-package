@@ -72,7 +72,7 @@ with month_summary as (
     , 4 * sum(total_per_customer) as arr
     , count(distinct stripe_customer_id) as customers
   from quarter
-  where is_retained = 1
+  where is_retained = 1 and is_new = 0
   group by 1,2,3
 
 ), unioned as (
@@ -111,4 +111,4 @@ where quarter_at < date_trunc('quarter', current_date) -- remove current, incomp
 from quarterly_arr_and_customers
 )
 
-select * from final
+select * from final order by quarter_at desc
