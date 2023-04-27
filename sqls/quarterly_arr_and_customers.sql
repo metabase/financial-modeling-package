@@ -1,10 +1,45 @@
-with status as (
+with customer_summary as (
+  select
+    stripe_customer_id
+    , min(date_trunc('month', recognized_at))::date as min_month_per_customer
+    , max(date_trunc('month', recognized_at))::date as max_month_per_customer
+  from {revenue} invoice
+  group by 1
+
+), months_per_customer as (
+  select
+    *
+  from customer_summary 
+  join generate_series(min_month_per_customer, max_month_per_customer + interval '1 month', '1 month'::interval) month on true
+
+),
+
+month_summary as (
+  select
+    months_per_customer.month
+    , months_per_customer.stripe_customer_id
+    , rev.customer_name
+    , sum(rev.amount) as total_per_customer
+   from {revenue} rev
+   full outer join months_per_customer
+     on months_per_customer.month::date = rev.month
+       and months_per_customer.stripe_customer_id = rev.stripe_customer_id
+  group by 1,2,3
+
+), summary_including_previous_values as (
+    select
+        *
+        , lag(total_per_customer) over (partition by stripe_customer_id order by month) as total_per_customer_previous_month
+        , lead(total_per_customer) over (partition by stripe_customer_id order by month) as total_per_customer_next_month
+    from month_summary
+
+), status as (
   select
     *
     , case when total_per_customer_previous_month is null then 1 else 0 end as is_new
     , case when total_per_customer_next_month is null then 1 else 0 end as is_churned
     , case when total_per_customer_previous_month is not null and total_per_customer is not null then 1 else 0 end as is_retained
-  from {monthly_revenue} as rev
+  from summary_including_previous_values as rev
 
 ), quarter as (
   select
@@ -14,16 +49,14 @@ with status as (
              when extract('month' from date_trunc('quarter', month)) = 10 then 'Q4 '
            end, extract('year' from month)) as quarter
     , date_trunc('quarter', month)::date as quarter_at
-    , stripe_subscription_id
     , stripe_customer_id
     , customer_name
-    , sum(total_per_subscription) as total_per_subscription
     , sum(total_per_customer) as total_per_customer
     , max(is_new) as is_new
     , max(is_churned) as is_churned
     , max(is_retained) as is_retained
   from status
-  group by 1,2,3,4,5
+  group by 1,2,3,4
 
 ), quarters_arr_new_customers as (
   select
