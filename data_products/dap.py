@@ -205,7 +205,7 @@ class DAP:
             created[ref_name] = '{{' + f'#{model_id}' + '}}'
             models[ref_name] = model_id
 
-            if model_id == model:
+            if ref_name == model:
                 exit()
 
         print('TODO: Create more models that will be used directly in the GSheets below and save urls to config.yml')
