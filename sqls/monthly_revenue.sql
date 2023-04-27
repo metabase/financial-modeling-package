@@ -36,15 +36,6 @@ month_summary as (
 ), monthly_revenue as (
   select distinct
     month::date as month
-    , concat(case
-               when extract('month' from date_trunc('quarter', month)) = 1 then 'Q1 '
-               when extract('month' from date_trunc('quarter', month)) = 4 then 'Q2 '
-               when extract('month' from date_trunc('quarter', month)) = 7 then 'Q3 '
-               when extract('month' from date_trunc('quarter', month)) = 10 then 'Q4 '
-             end,
-            extract('year' from month)
-            ) as quarter
-    , date_trunc('quarter', month)::date as quarter_at
     , stripe_customer_id
     , coalesce(total_per_customer_previous_month, 0) as beginning_rev
     , total_per_customer as ending_rev
@@ -59,8 +50,6 @@ from summary_including_previous_values
 ), monthly_summary as (
   select
     month
-    , quarter
-    , quarter_at
     , sum(new_rev) as new_rev
     , sum(expansion_rev) as expansion_rev
     , sum(contraction_rev) as contraction_rev
@@ -68,13 +57,11 @@ from summary_including_previous_values
     , lag(sum(ending_rev)) over (order by month) as beginning_rev
     , sum(ending_rev) as ending_rev
   from monthly_revenue
-  group by 1,2,3
+  group by 1
 )
 
 select
-  quarter
-  , quarter_at 
-  , month
+  month
   , new_rev
   , expansion_rev
   , contraction_rev
@@ -82,4 +69,4 @@ select
   , beginning_rev
   , ending_rev
 from monthly_summary
-order by 3
+order by 1
