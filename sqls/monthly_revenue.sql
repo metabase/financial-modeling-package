@@ -1,150 +1,72 @@
-with monthly_invoices as (
-   select
-     invoice.total as amount
-     , invoice.period_ended_at::date as date
-     , subscription.id as subscription_id
-     , subscription.customer_name
-     , subscription.cancel_at is null and not subscription.is_cancel_at_period_end as is_auto_renewal
-     , subscription.product_id
-     , subscription.product_name as product_name
-     , 'monthly' as billing_cycle
-     , invoice.customer_id as stripe_customer_id
-   from {stripe_invoice} invoice
-   join {stripe_subscription} subscription
-    on subscription.id = invoice.subscription_id
-   where invoice.total > 0 -- removes refunds
-   and subscription.plan_recurring_interval = 'month'
-   and subscription.plan_recurring_interval_count = 1
-   and invoice.status not in ('uncollectible', 'void', 'deleted')
-   and date_trunc('month', invoice.period_ended_at) <= date_trunc('month', CURRENT_DATE)
+with customer_summary as (
+  select
+    stripe_customer_id
+    , min(date_trunc('month', recognized_at))::date as min_month_per_customer
+    , max(date_trunc('month', recognized_at))::date as max_month_per_customer
+  from {revenue} invoice
+  group by 1
 
- ), expected_invoices_this_month as (
-   select
-     last_month.amount
-     , (last_month.date + interval '1 month')::date as date
-     , last_month.product_id
-     , last_month.product_name
-     , last_month.billing_cycle
-     , last_month.stripe_customer_id
-     , last_month.subscription_id
-     , last_month.customer_name
-     , last_month.is_auto_renewal
-   from monthly_invoices last_month
-   left join monthly_invoices this_month
-     on last_month.subscription_id = this_month.subscription_id
-     and date_trunc('month', last_month.date) + interval '1 month' = date_trunc('month', this_month.date)
-   where last_month.is_auto_renewal
-     and date_trunc('month', last_month.date) + interval '1 month' = date_trunc('month', CURRENT_DATE)
-     and this_month.date is null
+), months_per_customer as (
+  select
+    *
+  from customer_summary 
+  join generate_series(min_month_per_customer, max_month_per_customer + interval '1 month', '1 month'::interval) month on true
 
- ), annual_invoices as (
-   select invoice.total as amount,
-         invoice.period_ended_at::date as date
-         , subscription.current_period_end_at as subscription_period_end
-         , subscription.id as subscription_id
-         , subscription.customer_name
-         , subscription.cancel_at is null and not subscription.is_cancel_at_period_end as is_auto_renewal
-         , subscription.product_id as product_id
-         , subscription.product_name
-         , 'annually' as billing_cycle
-         , invoice.customer_id as stripe_customer_id
-   from {stripe_invoice} invoice
-   join {stripe_subscription} subscription
-    on subscription.id = invoice.subscription_id
-   where subscription.plan_recurring_interval = 'year'
-     and subscription.plan_recurring_interval_count = 1
-     and invoice.total > 0 -- removes refunds
-     and invoice.status not in ('uncollectible', 'deleted', 'void')
-     and date_trunc('month', invoice.period_ended_at) <= date_trunc('month', CURRENT_DATE)
+),
 
- ), annual_invoices_to_monthly as (
-   select
-     (date + month_offset * interval '1 month')::date as date
-     , 'annually' as billing_cycle
-     , product_name
-     , amount::float/12 as amount
-     , true as is_actual
-     , is_auto_renewal
-     , stripe_customer_id
-     , subscription_id
-     , customer_name
-     , product_id
-   from annual_invoices
-   join generate_series(0, 11) as month_offset
-     on date + month_offset * interval '1 month' < coalesce(subscription_period_end, date_trunc('month', now()) + interval '1 month')
+month_summary as (
+  select
+    months_per_customer.month
+    , months_per_customer.stripe_customer_id
+    , rev.customer_name
+    , sum(rev.amount) as total_per_customer
+   from {revenue} rev
+   full outer join months_per_customer
+     on months_per_customer.month::date = rev.month
+       and months_per_customer.stripe_customer_id = rev.stripe_customer_id
+  group by 1,2,3
 
- ), monthly_revenue as (
-   select distinct
-     date as recognized_at
-     , billing_cycle
-     , product_name
-     , true as is_actual
-     , is_auto_renewal
-     , amount
-     , stripe_customer_id
-     , subscription_id as stripe_subscription_id
-     , customer_name
-     , product_id as stripe_product_id
-   from monthly_invoices
-   union all
-   select distinct
-     date as recognized_at
-     , billing_cycle
-     , product_name
-     , false as is_actual
-     , is_auto_renewal
-     , amount
-     , stripe_customer_id
-     , subscription_id as stripe_subscription_id
-     , customer_name
-     , product_id as stripe_product_id
-   from expected_invoices_this_month
-   union all
-   select distinct
-     date as recognized_at
-     , billing_cycle
-     , product_name
-     , is_actual
-     , is_auto_renewal
-     , amount
-     , stripe_customer_id
-     , subscription_id as stripe_subscription_id
-     , customer_name
-     , product_id as stripe_product_id
-   from annual_invoices_to_monthly
+ ), summary_including_previous_values as (
+    select
+        *
+        , lag(total_per_customer) over (partition by stripe_customer_id order by month) as total_per_customer_previous_month
+        , lead(total_per_customer) over (partition by stripe_customer_id order by month) as total_per_customer_next_month
+    from month_summary
 
- ), consolidated_monthly_revenue as (
-   select
-     max(recognized_at) as recognized_at
-     , max(billing_cycle) as billing_cycle
-     , max(product_name) as product_name
-     , max(is_actual::integer)::boolean as is_actual
-     , max(is_auto_renewal::integer)::boolean as is_auto_renewal
-     , sum(amount) as amount
-     , max(stripe_customer_id) as stripe_customer_id
-     , max(stripe_subscription_id) as stripe_subscription_id
-     , max(customer_name) as customer_name
-     , max(stripe_product_id) as stripe_product_id
-   from monthly_revenue
-   group by date_trunc('month', recognized_at), stripe_subscription_id
+), monthly_revenue as (
+  select distinct
+    month::date as month
+    , stripe_customer_id
+    , coalesce(total_per_customer_previous_month, 0) as beginning_rev
+    , total_per_customer as ending_rev
+    , total_per_customer_next_month as total_next_month
+    , case when total_per_customer_previous_month is null then total_per_customer else 0 end as new_rev
+    , case when total_per_customer_previous_month < total_per_customer then (total_per_customer - total_per_customer_previous_month) else 0 end as expansion_rev
+    , case when total_per_customer_previous_month > total_per_customer then (total_per_customer - total_per_customer_previous_month) else 0 end as contraction_rev
+    , case when month < date_trunc('month', current_date)::date and total_per_customer_next_month is null then (-1 * total_per_customer) else 0 end as churn_rev
+from summary_including_previous_values
 
- ), final as (
-   select distinct
-     md5(concat(revenue.recognized_at, revenue.stripe_subscription_id)) as id
-     , revenue.customer_name
-     , revenue.recognized_at
-     , date_trunc('month', revenue.recognized_at)::date as month
-     , revenue.amount
-     , revenue.is_actual
-     , revenue.is_auto_renewal
-     , revenue.product_name
-     , revenue.billing_cycle
-     , revenue.stripe_customer_id
-     , revenue.stripe_subscription_id
-     , revenue.stripe_product_id
-   from consolidated_monthly_revenue revenue
-   where recognized_at < date_trunc('month', current_date) + interval '1 month'
-   order by recognized_at desc
+-- By Month --
+), monthly_summary as (
+  select
+    month
+    , sum(new_rev) as new_rev
+    , sum(expansion_rev) as expansion_rev
+    , sum(contraction_rev) as contraction_rev
+    , sum(churn_rev) as churn_rev
+    , lag(sum(ending_rev)) over (order by month) as beginning_rev
+    , sum(ending_rev) as ending_rev
+  from monthly_revenue
+  group by 1
 )
 
- select * from final
+select
+  month
+  , new_rev
+  , expansion_rev
+  , contraction_rev
+  , coalesce(lag(churn_rev) over (order by month), 0) as churn_rev
+  , beginning_rev
+  , ending_rev
+from monthly_summary
+order by 1
