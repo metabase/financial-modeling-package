@@ -133,6 +133,7 @@ with monthly_invoices as (
      md5(concat(revenue.recognized_at, revenue.stripe_subscription_id)) as id
      , revenue.customer_name
      , revenue.recognized_at
+     , date_trunc('month', revenue.recognized_at)::date as month
      , revenue.amount
      , revenue.is_actual
      , revenue.is_auto_renewal
@@ -144,24 +145,6 @@ with monthly_invoices as (
    from consolidated_monthly_revenue revenue
    where recognized_at < date_trunc('month', current_date) + interval '1 month'
    order by recognized_at desc
+)
 
- ), month_summary as (
-    select distinct
-        date_trunc('month', recognized_at)::date as month
-        , stripe_subscription_id
-        , stripe_customer_id
-        , customer_name
-        , sum(amount) over (partition by date_trunc('month', recognized_at)::date, stripe_subscription_id) as total_per_subscription
-        , sum(amount) over (partition by date_trunc('month', recognized_at)::date, stripe_customer_id) as total_per_customer
-     from final
-
- ), summary_including_previous_values as (
-    select
-        *
-        , lag(total_per_customer) over (partition by stripe_customer_id order by month) as total_per_customer_previous_month
-        , lead(total_per_customer) over (partition by stripe_customer_id order by month) as total_per_customer_next_month
-    from month_summary
-
- )
-
- select * from summary_including_previous_values
+ select * from final
