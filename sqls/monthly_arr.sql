@@ -3,18 +3,16 @@ with customer_summary as (
     stripe_customer_id
     , min(date_trunc('month', recognized_at))::date as min_month_per_customer
     , max(date_trunc('month', recognized_at))::date as max_month_per_customer
-  from {revenue} invoice
+  from {revenue} rev
   group by 1
 
 ), months_per_customer as (
   select
     *
-  from customer_summary 
+  from customer_summary
   join generate_series(min_month_per_customer, max_month_per_customer + interval '1 month', '1 month'::interval) month on true
 
-),
-
-month_summary as (
+), month_summary as (
   select
     months_per_customer.month
     , months_per_customer.stripe_customer_id
@@ -40,13 +38,24 @@ month_summary as (
     , coalesce(total_per_customer_previous_month, 0) as beginning_rev
     , total_per_customer as ending_rev
     , total_per_customer_next_month as total_next_month
-    , case when total_per_customer_previous_month is null then total_per_customer else 0 end as new_rev
-    , case when total_per_customer_previous_month < total_per_customer then (total_per_customer - total_per_customer_previous_month) else 0 end as expansion_rev
-    , case when total_per_customer_previous_month > total_per_customer then (total_per_customer - total_per_customer_previous_month) else 0 end as contraction_rev
-    , case when month < date_trunc('month', current_date)::date and total_per_customer_next_month is null then (-1 * total_per_customer) else 0 end as churn_rev
+    , case
+        when total_per_customer_previous_month is null then total_per_customer
+        else 0
+      end as new_rev
+    , case
+        when total_per_customer_previous_month < total_per_customer then (total_per_customer - total_per_customer_previous_month)
+        else 0
+      end as expansion_rev
+    , case
+        when total_per_customer_previous_month > total_per_customer then (total_per_customer - total_per_customer_previous_month)
+        else 0
+      end as contraction_rev
+    , case
+        when month < date_trunc('month', current_date)::date and total_per_customer_next_month is null then (-1 * total_per_customer)
+        else 0
+      end as churn_rev
 from summary_including_previous_values
 
--- By Month --
 ), monthly_summary as (
   select
     month
@@ -58,15 +67,20 @@ from summary_including_previous_values
     , sum(ending_rev) as ending_rev
   from monthly_revenue
   group by 1
+
+), final as (
+  select
+    month
+    , beginning_rev * 12 as beginning_arr
+    , new_rev * 12 as new_arr
+    , expansion_rev * 12 as expansion_arr
+    , contraction_rev * 12 as contraction_arr
+    , coalesce(lag(churn_rev) over (order by month), 0) * 12 as churn_arr
+    , ending_rev * 12 as ending_arr
+  from monthly_summary
+  where month < date_trunc('month', current_date) -- remove current incomplete month
+  order by 1
+
 )
 
-select
-  month
-  , new_rev * 12 as new_arr
-  , expansion_rev * 12 as expansion_arr
-  , contraction_rev * 12 as contraction_arr
-  , coalesce(lag(churn_rev) over (order by month), 0) * 12 as churn_arr
-  , beginning_rev * 12 as beginning_arr
-  , ending_rev * 12 as ending_arr
-from monthly_summary
-order by 1
+select * from final
