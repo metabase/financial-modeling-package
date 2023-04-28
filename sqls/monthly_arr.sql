@@ -78,7 +78,7 @@ from summary_including_previous_values
     , coalesce(lag(churn_rev) over (order by month), 0) * 12 as churn_arr
     , ending_rev * 12 as ending_arr
   from monthly_summary
-  where month < date_trunc('month', current_date) -- remove current incomplete month
+  where month <= date_trunc('month', current_date) -- remove next incomplete month
   order by 1
 
 )
