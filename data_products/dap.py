@@ -8,7 +8,6 @@ import click
 import yaml
 
 from data_products.metabase_client import MetabaseClient
-from data_products.excel_pivot import create_excel
 
 
 class DAP:
@@ -87,7 +86,8 @@ class DAP:
         """ Create data products based on configuration file. """
         self._create_models(force=force, model=model)
 
-        print('\nPlease copy the CSV URL above and paste into the Input URLs tab of the Financial Model template at ...')
+        print('\nPlease copy the CSV URL above and '
+              'paste into the Input URLs tab of the Financial Model template at ...')
         # create_excel(csv_url=self.config['test_data']['csv_url'])
 
     def _create_models(self, force=False, model=None):
