@@ -115,9 +115,9 @@ where quarter_at < date_trunc('quarter', current_date) -- remove current, incomp
     quarter
     , quarter_at
     , 'New' as status
-    , new_rev * 4 as arr
-    , ending_rev * 4 as ending_arr
-  from {quarterly_revenue} rev
+    , new_arr as arr
+    , ending_arr
+  from {quarterly_arr} rev
   where quarter_at < date_trunc('quarter', current_date) -- remove current, incomplete quarter
   
   union all
@@ -126,9 +126,9 @@ where quarter_at < date_trunc('quarter', current_date) -- remove current, incomp
     quarter
     , quarter_at
     , 'Churn' as status
-    , churn_rev * 4 as arr
-    , ending_rev * 4 as ending_arr
-  from {quarterly_revenue} rev
+    , churn_arr as arr
+    , ending_arr
+  from {quarterly_arr} rev
   where quarter_at < date_trunc('quarter', current_date) -- remove current, incomplete quarter
   
   union all
@@ -137,9 +137,9 @@ where quarter_at < date_trunc('quarter', current_date) -- remove current, incomp
     quarter
     , quarter_at
     , 'Beginning' as status
-    , beginning_rev_lag * 4 as arr
-    , ending_rev * 4 as ending_arr
-  from {quarterly_revenue} rev
+    , beginning_arr as arr
+    , ending_arr
+  from {quarterly_arr} rev
   where quarter_at < date_trunc('quarter', current_date) -- remove current, incomplete quarter
   
   union all
@@ -148,9 +148,9 @@ where quarter_at < date_trunc('quarter', current_date) -- remove current, incomp
     quarter
     , quarter_at
     , 'Expansion' as status
-    , expansion_rev * 4 as arr
-    , ending_rev * 4 as ending_arr
-  from {quarterly_revenue} rev
+    , expansion_arr as arr
+    , ending_arr
+  from {quarterly_arr} rev
   where quarter_at < date_trunc('quarter', current_date) -- remove current, incomplete quarter
   
   union all
@@ -159,9 +159,9 @@ where quarter_at < date_trunc('quarter', current_date) -- remove current, incomp
     quarter
     , quarter_at
     , 'Contraction' as status
-    , contraction_rev * 4 as arr
-    , ending_rev * 4 as ending_arr
-  from {quarterly_revenue} rev
+    , contraction_arr as arr
+    , ending_arr
+  from {quarterly_arr} rev
   where quarter_at < date_trunc('quarter', current_date) -- remove current, incomplete quarter
 
 ), quarterly_arrs_and_customers as (
