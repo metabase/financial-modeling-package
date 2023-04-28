@@ -65,29 +65,46 @@ with arrs as (
   select
     quarter
     , quarter_at
-    , concat(status, ' customers') as metric
-    , customers as value
-  from {quarterly_arr_and_customers} customers
-  where status not in ('Expansion', 'Contraction')
+    , 'Beginning customers' as metric
+    , beginning_customers as value
+  from {quarterly_customers} customers
 
   union all
 
-  select distinct
+  select
+    quarter
+    , quarter_at
+    , 'New customers' as metric
+    , new_customers as value
+  from {quarterly_customers} arr
+
+  union all
+
+  select
+    quarter
+    , quarter_at
+    , 'Churn customers' as metric
+    , churn_customers as value
+  from {quarterly_customers} arr
+
+  union all
+
+  select
     quarter
     , quarter_at
     , 'Ending customers' as metric
     , ending_customers as value
-  from {quarterly_arr_and_customers} ending_customers
+  from {quarterly_customers} arr
 
   union all
 
-  select distinct
+  select
     quarter
-    , date(quarter_at) as quarter_at
+    , quarter_at
     , 'Customers % YoY growth' as metric
-    , (ending_customers - last_year_customer_value)/coalesce(last_year_customer_value, 1) as value
-  from {quarterly_arr_and_customers} customers
-  where last_year_customer_value is not null
+    , yearly_growth as value
+  from {quarterly_customers} arr
+  where yearly_growth is not null
 
 ), final as (
   select * from arrs
@@ -99,4 +116,4 @@ with arrs as (
 )
 
 select * from final
-order by 2 desc
+order by quarter_at desc
