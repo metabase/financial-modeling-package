@@ -149,6 +149,13 @@ class DAP:
 
             if model_id and not force:
                 print('\t* Model', name, 'already exists. Use --force to update it')
+
+                if is_public_question:
+                    resp = mb_client.post(f'card/{model_id}/public_link')
+                    uuid = resp['uuid']
+                    print('\t- Publicly shared at',
+                          self.config['metabase']['url'] + f'public/question/{uuid}.csv')
+
                 sql_dependencies.pop(file)
                 created[ref_name] = '{{' + f'#{model_id}' + '}}'
                 models[ref_name] = model_id
@@ -199,7 +206,7 @@ class DAP:
             if is_public_question:
                 resp = mb_client.post(f'card/{model_id}/public_link')
                 uuid = resp['uuid']
-                print('\t\t- Publicly shared at',
+                print('\t- Publicly shared at',
                       self.config['metabase']['url'] + f'public/question/{uuid}.csv')
 
             sql_dependencies.pop(file)
