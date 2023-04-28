@@ -62,11 +62,11 @@ from summary_including_previous_values
 
 select
   month
-  , new_rev
-  , expansion_rev
-  , contraction_rev
-  , coalesce(lag(churn_rev) over (order by month), 0) as churn_rev
-  , beginning_rev
-  , ending_rev
+  , new_rev * 12 as new_arr
+  , expansion_rev * 12 as expansion_arr
+  , contraction_rev * 12 as contraction_arr
+  , coalesce(lag(churn_rev) over (order by month), 0) * 12 as churn_arr
+  , beginning_rev * 12 as beginning_arr
+  , ending_rev * 12 as ending_arr
 from monthly_summary
 order by 1
