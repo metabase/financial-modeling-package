@@ -1,26 +1,65 @@
-with ending_arr as (
-  select distinct
+with arrs as (
+  select
+    quarter
+    , quarter_at
+    , 'Beginning ARR' as metric
+    , beginning_arr as value
+  from {quarterly_arr} arr
+
+  union all
+
+  select
+    quarter
+    , quarter_at
+    , 'New ARR' as metric
+    , new_arr as value
+  from {quarterly_arr} arr
+
+  union all
+
+  select
+    quarter
+    , quarter_at
+    , 'Expansion ARR' as metric
+    , expansion_arr as value
+  from {quarterly_arr} arr
+
+  union all
+
+  select
+    quarter
+    , quarter_at
+    , 'Contraction ARR' as metric
+    , contraction_arr as value
+  from {quarterly_arr} arr
+
+  union all
+
+  select
+    quarter
+    , quarter_at
+    , 'Churn ARR' as metric
+    , churn_arr as value
+  from {quarterly_arr} arr
+
+  union all
+
+  select
     quarter
     , quarter_at
     , 'Ending ARR' as metric
     , ending_arr as value
-  from {quarterly_arr_and_customers} ending_arr
+  from {quarterly_arr} arr
 
-), ending_customers as (
-  select distinct
-    quarter
-    , quarter_at
-    , 'Ending customers' as metric
-    , ending_customers as value
-  from {quarterly_arr_and_customers} ending_customers
+  union all
 
-), arr as (
   select
     quarter
     , quarter_at
-    , concat(status, ' ARR') as metric
-    , arr as value
-  from {quarterly_arr_and_customers} arr
+    , 'ARR % YoY growth' as metric
+    , yearly_growth as value
+  from {quarterly_arr} arr
+  where yearly_growth is not null
 
 ), customers as (
   select
@@ -31,16 +70,17 @@ with ending_arr as (
   from {quarterly_arr_and_customers} customers
   where status not in ('Expansion', 'Contraction')
 
-), yearly_arr as (
+  union all
+
   select distinct
     quarter
     , quarter_at
-    , 'ARR % YoY growth' as metric
-    , (ending_arr - last_year_arr_value)/coalesce(last_year_arr_value, 1) value
-  from {quarterly_arr_and_customers} customers
-  where last_year_arr_value is not null
+    , 'Ending customers' as metric
+    , ending_customers as value
+  from {quarterly_arr_and_customers} ending_customers
 
-), yearly_customers as (
+  union all
+
   select distinct
     quarter
     , date(quarter_at) as quarter_at
@@ -50,17 +90,12 @@ with ending_arr as (
   where last_year_customer_value is not null
 
 ), final as (
-  select * from ending_arr
+  select * from arrs
+
   union all
-  select * from ending_customers
-  union all
-  select * from arr
-  union all
+
   select * from customers
-  union all
-  select * from yearly_arr
-  union all
-  select * from yearly_customers
+
 )
 
 select * from final
