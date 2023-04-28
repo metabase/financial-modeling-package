@@ -8,7 +8,6 @@ import click
 import yaml
 
 from data_products.metabase_client import MetabaseClient
-from data_products.excel_pivot import create_excel
 
 
 class DAP:
@@ -87,7 +86,9 @@ class DAP:
         """ Create data products based on configuration file. """
         self._create_models(force=force, model=model)
 
-        create_excel(csv_url=self.config['test_data']['csv_url'])
+        print('\nPlease copy the CSV URL above and '
+              'paste into the Input URLs tab of the Financial Model template at ...')
+        # create_excel(csv_url=self.config['test_data']['csv_url'])
 
     def _create_models(self, force=False, model=None):
         """ Create Metabase models """
@@ -140,7 +141,7 @@ class DAP:
                      + ', '.join(sql_dependencies[file] - set(created)))
 
             ref_name = file.name.split('.')[0]
-            name = ref_name.replace('_', ' ').title().replace('Arr', 'ARR')
+            name = ref_name.replace('_', ' ').title().replace('Arr', 'ARR').replace('And', 'and')
             model_id = existing_models.get(name)
             is_public_question = '/public/' in str(file)
             is_model = not is_public_question
@@ -148,6 +149,13 @@ class DAP:
 
             if model_id and not force:
                 print('\t* Model', name, 'already exists. Use --force to update it')
+
+                if is_public_question:
+                    resp = mb_client.post(f'card/{model_id}/public_link')
+                    uuid = resp['uuid']
+                    print('\t- Publicly shared at',
+                          self.config['metabase']['url'] + f'public/question/{uuid}.csv')
+
                 sql_dependencies.pop(file)
                 created[ref_name] = '{{' + f'#{model_id}' + '}}'
                 models[ref_name] = model_id
@@ -198,7 +206,7 @@ class DAP:
             if is_public_question:
                 resp = mb_client.post(f'card/{model_id}/public_link')
                 uuid = resp['uuid']
-                print('\t\t- Publicly shared at',
+                print('\t- Publicly shared at',
                       self.config['metabase']['url'] + f'public/question/{uuid}.csv')
 
             sql_dependencies.pop(file)
@@ -207,8 +215,6 @@ class DAP:
 
             if ref_name == model:
                 exit()
-
-        print('TODO: Create more models that will be used directly in the GSheets below and save urls to config.yml')
 
     def _extract_dependencies_from_sql(self, sql):
         """ Return a set of formatted variable names (e.g. {key}) from the given SQL """

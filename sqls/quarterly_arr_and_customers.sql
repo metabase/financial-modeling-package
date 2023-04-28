@@ -58,34 +58,31 @@ month_summary as (
   from status
   group by 1,2,3,4
 
-), quarters_arr_new_customers as (
+), quarters_new_customers as (
   select
     quarter
     , quarter_at
     , 'New' as status
-    , 4 * sum(total_per_customer) as arr -- since we are doing per quarter and not per month, we multiply by 4
     , count(distinct stripe_customer_id) as customers
   from quarter
   where is_new = 1
   group by 1,2,3
 
-), quarters_arr_churned_customers as (
+), quarters_churned_customers as (
   select
     quarter
     , quarter_at
     , 'Churn' as status
-    , -4 * sum(total_per_customer) as arr
     , count(distinct stripe_customer_id) * -1 as customers
   from quarter
   where is_churned = 1
   group by 1,2,3
 
-),  quarters_arr_retained_customers as (
+),  quarters_retained_customers as (
   select
     quarter
     , quarter_at
     , 'Beginning' as status
-    , 4 * sum(total_per_customer) as arr
     , count(distinct stripe_customer_id) as customers
   from quarter
   where is_retained = 1 and is_new = 0
@@ -95,36 +92,96 @@ month_summary as (
   select
     *
     , sum(customers) over (partition by quarter order by quarter_at) as ending_customers
-    , sum(arr) over (partition by quarter order by quarter_at) as ending_arr
   from (
-    select * from quarters_arr_new_customers
+    select * from quarters_new_customers
     UNION
-    select * from quarters_arr_churned_customers
+    select * from quarters_churned_customers
     UNION
-    select * from quarters_arr_retained_customers) u
+    select * from quarters_retained_customers) u
   order by quarter_at desc
 
-), quarterly_arr_and_customers as (
+), quarterly_customers as (
   select
     quarter
     , quarter_at
     , status
-    , arr
     , customers
---    , case when status = 'Beginning' then coalesce(lag(ending_customers) over (partition by status order by quarter_at), customers)
---        when status != 'Beginning' then customers
---      end as customers
     , ending_customers
-    , ending_arr
 from unioned
 where quarter_at < date_trunc('quarter', current_date) -- remove current, incomplete quarter
 
+) , quarterly_arrs as (
+  select
+    quarter
+    , quarter_at
+    , 'New' as status
+    , new_rev * 4 as arr
+    , ending_rev * 4 as ending_arr
+  from {quarterly_revenue} rev
+  where quarter_at < date_trunc('quarter', current_date) -- remove current, incomplete quarter
+  
+  union all
+  
+  select
+    quarter
+    , quarter_at
+    , 'Churn' as status
+    , churn_rev * 4 as arr
+    , ending_rev * 4 as ending_arr
+  from {quarterly_revenue} rev
+  where quarter_at < date_trunc('quarter', current_date) -- remove current, incomplete quarter
+  
+  union all
+  
+  select
+    quarter
+    , quarter_at
+    , 'Beginning' as status
+    , beginning_rev_lag * 4 as arr
+    , ending_rev * 4 as ending_arr
+  from {quarterly_revenue} rev
+  where quarter_at < date_trunc('quarter', current_date) -- remove current, incomplete quarter
+  
+  union all
+  
+  select
+    quarter
+    , quarter_at
+    , 'Expansion' as status
+    , expansion_rev * 4 as arr
+    , ending_rev * 4 as ending_arr
+  from {quarterly_revenue} rev
+  where quarter_at < date_trunc('quarter', current_date) -- remove current, incomplete quarter
+  
+  union all
+  
+  select
+    quarter
+    , quarter_at
+    , 'Contraction' as status
+    , contraction_rev * 4 as arr
+    , ending_rev * 4 as ending_arr
+  from {quarterly_revenue} rev
+  where quarter_at < date_trunc('quarter', current_date) -- remove current, incomplete quarter
+
+), quarterly_arrs_and_customers as (
+    select
+      coalesce(a.quarter, c.quarter) as quarter
+      , coalesce(a.quarter_at, c.quarter_at) as quarter_at
+      , coalesce(a.status, c.status) as status
+      , customers
+      , ending_customers
+      , arr
+      , ending_arr
+    from quarterly_customers c
+    full join quarterly_arrs a
+        on c.quarter = a.quarter and c.status = a.status
 ), final as (
   select
     *
     , lag(ending_arr, 4) over (partition by status order by quarter_at) as last_year_arr_value
     , lag(ending_customers, 4) over (partition by status order by quarter_at) as last_year_customer_value
-from quarterly_arr_and_customers
+from quarterly_arrs_and_customers
 )
 
 select * from final order by quarter_at desc

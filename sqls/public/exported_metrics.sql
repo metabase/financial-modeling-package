@@ -29,6 +29,7 @@ with ending_arr as (
     , concat(status, ' customers') as metric
     , customers as value
   from {quarterly_arr_and_customers} customers
+  where status not in ('Expansion', 'Contraction')
 
 ), yearly_arr as (
   select distinct
