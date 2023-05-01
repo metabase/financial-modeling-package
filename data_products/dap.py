@@ -88,7 +88,7 @@ class DAP:
 
         print('\nPlease copy the CSV URL above and '
               'paste into the Input URLs tab of the Financial Model template at ...')
-        # create_excel(csv_url=self.config['test_data']['csv_url'])
+        print('If import times out, wait a few minutes for caching to kick in, then try again by deleting the URL.')
 
     def _create_models(self, force=False, model=None, no_cache=False):
         """ Create Metabase models """
