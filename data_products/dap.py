@@ -82,15 +82,15 @@ class DAP:
               'A main product will be included in the financial reports while other products will be\n'
               'collapsed and aggregated as part of the main product in the same subscription')
 
-    def create(self, force=False, model=None):
+    def create(self, force=False, model=None, no_cache=False):
         """ Create data products based on configuration file. """
-        self._create_models(force=force, model=model)
+        self._create_models(force=force, model=model, no_cache=no_cache)
 
         print('\nPlease copy the CSV URL above and '
               'paste into the Input URLs tab of the Financial Model template at ...')
         # create_excel(csv_url=self.config['test_data']['csv_url'])
 
-    def _create_models(self, force=False, model=None):
+    def _create_models(self, force=False, model=None, no_cache=False):
         """ Create Metabase models """
         mb_client = MetabaseClient(self.config['metabase']['url'], self.config['metabase']['username'],
                                    self.config['metabase']['password'])
@@ -194,7 +194,8 @@ class DAP:
 
             if model_id:
                 mb_client.put(f'card/{model_id}', json=model_json)
-                if is_model:
+                if is_model and not no_cache:
+                    mb_client.post(f'card/{model_id}/persist', skip_return=True)
                     mb_client.post(f'card/{model_id}/refresh', skip_return=True)
                 print(f'\t* Updated existing {model_or_question}', name, 'at',
                       self.config['metabase']['url'] + f'{model_or_question}/{model_id}')
@@ -211,6 +212,9 @@ class DAP:
                 uuid = resp['uuid']
                 print('\t- Publicly shared at',
                       self.config['metabase']['url'] + f'public/question/{uuid}.csv')
+
+            elif no_cache:
+                mb_client.post(f'card/{model_id}/unpersist', skip_return=True)
 
             sql_dependencies.pop(file)
             created[ref_name] = '{{' + ref_id(model_id, ref_name) + '}}'
