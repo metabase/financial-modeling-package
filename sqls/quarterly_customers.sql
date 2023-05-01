@@ -49,6 +49,7 @@ with monthly_customers as (
     , churn_customers
     , ending_customers
     , lag(ending_customers, 4) over (order by quarter_at) as last_year_customers
+    , lag(ending_customers) over (order by quarter_at) as last_quarter_customers
   from monthly_changing_customers
   full outer join beginning_ending_customers
   using (quarter, quarter_at)
@@ -62,7 +63,9 @@ with monthly_customers as (
     , new_customers
     , churn_customers
     , ending_customers
-    , 1.0*(ending_customers - last_year_customers) / last_year_customers as yearly_growth
+    , 1.0*(ending_customers - last_year_customers) / last_year_customers as yearly_growth_rate
+    , 1.0* ending_customers/last_quarter_customers as quarterly_growth_rate
+    , -1.0*churn_customers/ending_customers as churn_rate
   from all_customers
   where quarter_at < date_trunc('quarter', current_date) -- remove current incomplete quarter
 

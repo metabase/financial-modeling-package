@@ -57,9 +57,29 @@ with arrs as (
     quarter
     , quarter_at
     , 'ARR % YoY growth' as metric
-    , yearly_growth as value
+    , yearly_growth_rate as value
   from {quarterly_arr} arr
-  where yearly_growth is not null
+  where yearly_growth_rate is not null
+
+  union all
+
+  select
+    quarter
+    , quarter_at
+    , 'ARR % Quarterly growth' as metric
+    , quarterly_growth_rate as value
+  from {quarterly_arr} arr
+  where quarterly_growth_rate is not null
+
+  union all
+
+  select
+    quarter
+    , quarter_at
+    , 'ARR Quarterly Expansion Rate' as metric
+    , expansion_rate as value
+  from {quarterly_arr} arr
+  where expansion_rate is not null
 
 ), customers as (
   select
@@ -76,7 +96,7 @@ with arrs as (
     , quarter_at
     , 'New customers' as metric
     , new_customers as value
-  from {quarterly_customers} arr
+  from {quarterly_customers} customers
 
   union all
 
@@ -85,7 +105,7 @@ with arrs as (
     , quarter_at
     , 'Churn customers' as metric
     , churn_customers as value
-  from {quarterly_customers} arr
+  from {quarterly_customers} customers
 
   union all
 
@@ -94,7 +114,7 @@ with arrs as (
     , quarter_at
     , 'Ending customers' as metric
     , ending_customers as value
-  from {quarterly_customers} arr
+  from {quarterly_customers} customers
 
   union all
 
@@ -102,9 +122,40 @@ with arrs as (
     quarter
     , quarter_at
     , 'Customers % YoY growth' as metric
-    , yearly_growth as value
-  from {quarterly_customers} arr
-  where yearly_growth is not null
+    , yearly_growth_rate as value
+  from {quarterly_customers} customers
+  where yearly_growth_rate is not null
+
+  union all
+
+  select
+    quarter
+    , quarter_at
+    , 'Customers % Quarterly growth' as metric
+    , quarterly_growth_rate as value
+  from {quarterly_customers} customers
+  where quarterly_growth_rate is not null
+
+  union all
+
+  select
+    quarter
+    , quarter_at
+    , 'Customer Quarterly Churn Rate' as metric
+    , churn_rate as value
+  from {quarterly_customers} customers
+  where churn_rate is not null
+
+), acv as (
+
+select
+    quarter
+    , quarter_at
+    , 'Annual Contract Value'
+    , 1.0 * ending_arr / ending_customers as acv
+from {quarterly_customers} customers
+left join {quarterly_arr} arr
+    using (quarter, quarter_at)
 
 ), final as (
   select * from arrs
@@ -112,6 +163,10 @@ with arrs as (
   union all
 
   select * from customers
+
+  union all
+
+  select * from acv
 
 )
 

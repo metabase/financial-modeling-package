@@ -53,6 +53,7 @@ with monthly_arr as (
     , churn_arr
     , ending_arr
     , lag(ending_arr, 4) over (order by quarter_at) as last_year_arr
+    , lag(ending_arr) over (order by quarter_at) as last_quarter_arr
   from changing_arrs
   full outer join beginning_ending_arrs
   using (quarter, quarter_at)
@@ -68,7 +69,9 @@ with monthly_arr as (
     , contraction_arr
     , churn_arr
     , ending_arr
-    , (ending_arr - last_year_arr) / last_year_arr as yearly_growth
+    , (ending_arr - last_year_arr) / last_year_arr as yearly_growth_rate
+    , 1.0 * ending_arr / last_quarter_arr as quarterly_growth_rate
+    , 1.0 * expansion_arr / ending_arr as expansion_rate
   from all_arrs
   where quarter_at < date_trunc('quarter', current_date) -- remove current incomplete quarter
 
