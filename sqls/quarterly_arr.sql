@@ -9,14 +9,14 @@ with monthly_arr as (
           when extract('month' from date_trunc('quarter', month)) = 10 then 'Q4 '
         end,
         extract('year' from month)
-    ) as quarter
-    , date_trunc('quarter', month)::date as quarter_at
+    ) as quarter_name
+    , date_trunc('quarter', month)::date as quarter
   from {monthly_arr} r
 
 ), ending_arrs as (
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , month
     , ending_arr
     , lead(date_trunc('quarter', month)::date) over (order by month) as next_quarter
@@ -24,17 +24,17 @@ with monthly_arr as (
 
 ), beginning_ending_arrs as (
   select
-      quarter
-      , quarter_at
-      , lag(ending_arr) over (order by quarter_at) as beginning_arr
+      quarter_name
+      , quarter
+      , lag(ending_arr) over (order by quarter) as beginning_arr
       , ending_arr
   from ending_arrs
-  where quarter_at != next_quarter
+  where quarter != next_quarter
 
 ), changing_arrs as (
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , sum(new_arr) as new_arr
     , sum(expansion_arr) as expansion_arr
     , sum(contraction_arr) as contraction_arr
@@ -44,24 +44,24 @@ with monthly_arr as (
 
 ),  all_arrs as (
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , beginning_arr
     , new_arr
     , expansion_arr
     , contraction_arr
     , churn_arr
     , ending_arr
-    , lag(ending_arr, 4) over (order by quarter_at) as last_year_arr
+    , lag(ending_arr, 4) over (order by quarter) as last_year_arr
   from changing_arrs
   full outer join beginning_ending_arrs
-  using (quarter, quarter_at)
-  order by quarter_at asc
+  using (quarter_name, quarter)
+  order by quarter asc
 
 ), final as (
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , beginning_arr
     , new_arr
     , expansion_arr
@@ -70,7 +70,7 @@ with monthly_arr as (
     , ending_arr
     , (ending_arr - last_year_arr) / last_year_arr as yearly_growth
   from all_arrs
-  where quarter_at < date_trunc('quarter', current_date) -- remove current incomplete quarter
+  where quarter < date_trunc('quarter', current_date) -- remove current incomplete quarter_name
 
 )
 
