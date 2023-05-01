@@ -131,6 +131,9 @@ class DAP:
                    }
         models = {}
 
+        def ref_id(model_id, model_ref):
+            return f'#{model_id}-{model_ref}'.replace('_', '-')
+
         while sql_dependencies:
             for file in sql_dependencies:
                 if sql_dependencies[file].issubset(created):
@@ -157,19 +160,19 @@ class DAP:
                           self.config['metabase']['url'] + f'public/question/{uuid}.csv')
 
                 sql_dependencies.pop(file)
-                created[ref_name] = '{{' + f'#{model_id}' + '}}'
+                created[ref_name] = '{{' + ref_id(model_id, ref_name) + '}}'
                 models[ref_name] = model_id
                 continue
 
             template_tags = {}
             for dependent in sql_dependencies[file]:
                 if dependent in models:
-                    hash_model_id = f'#{models[dependent]}'
+                    hash_model_id = ref_id(models[dependent], dependent)
                     template_tags[hash_model_id] = {
                       "type": "card",
                       "name": hash_model_id,
                       "id": str(uuid4()),
-                      "display-name": hash_model_id,
+                      "display-name": hash_model_id.replace('-', ' ').title(),
                       "card-id": models[dependent]
                     }
             model_json = {
@@ -210,7 +213,7 @@ class DAP:
                       self.config['metabase']['url'] + f'public/question/{uuid}.csv')
 
             sql_dependencies.pop(file)
-            created[ref_name] = '{{' + f'#{model_id}' + '}}'
+            created[ref_name] = '{{' + ref_id(model_id, ref_name) + '}}'
             models[ref_name] = model_id
 
             if ref_name == model:
