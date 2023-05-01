@@ -3,10 +3,10 @@ with monthly_arr as (
     *
     , concat(
         case
-          when extract('month' from date_trunc('quarter_name', month)) = 1 then 'Q1 '
-          when extract('month' from date_trunc('quarter_name', month)) = 4 then 'Q2 '
-          when extract('month' from date_trunc('quarter_name', month)) = 7 then 'Q3 '
-          when extract('month' from date_trunc('quarter_name', month)) = 10 then 'Q4 '
+          when extract('month' from date_trunc('quarter', month)) = 1 then 'Q1 '
+          when extract('month' from date_trunc('quarter', month)) = 4 then 'Q2 '
+          when extract('month' from date_trunc('quarter', month)) = 7 then 'Q3 '
+          when extract('month' from date_trunc('quarter', month)) = 10 then 'Q4 '
         end,
         extract('year' from month)
     ) as quarter_name
@@ -16,7 +16,7 @@ with monthly_arr as (
 ), ending_arrs as (
   select
     quarter_name
-    , quarter_name
+    , quarter
     , month
     , ending_arr
     , lead(date_trunc('quarter', month)::date) over (order by month) as next_quarter
@@ -25,8 +25,8 @@ with monthly_arr as (
 ), beginning_ending_arrs as (
   select
       quarter_name
-      , quarter_name
-      , lag(ending_arr) over (order by quarter_name) as beginning_arr
+      , quarter
+      , lag(ending_arr) over (order by quarter) as beginning_arr
       , ending_arr
   from ending_arrs
   where quarter != next_quarter
