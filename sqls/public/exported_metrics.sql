@@ -1,7 +1,7 @@
 with arrs as (
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , 'Beginning ARR' as metric
     , beginning_arr as value
   from {quarterly_arr} arr
@@ -9,8 +9,8 @@ with arrs as (
   union all
 
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , 'New ARR' as metric
     , new_arr as value
   from {quarterly_arr} arr
@@ -18,8 +18,8 @@ with arrs as (
   union all
 
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , 'Expansion ARR' as metric
     , expansion_arr as value
   from {quarterly_arr} arr
@@ -27,8 +27,8 @@ with arrs as (
   union all
 
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , 'Contraction ARR' as metric
     , contraction_arr as value
   from {quarterly_arr} arr
@@ -36,8 +36,8 @@ with arrs as (
   union all
 
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , 'Churn ARR' as metric
     , churn_arr as value
   from {quarterly_arr} arr
@@ -45,8 +45,8 @@ with arrs as (
   union all
 
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , 'Ending ARR' as metric
     , ending_arr as value
   from {quarterly_arr} arr
@@ -54,8 +54,8 @@ with arrs as (
   union all
 
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , 'ARR % YoY growth' as metric
     , yearly_growth_rate as value
   from {quarterly_arr} arr
@@ -83,8 +83,8 @@ with arrs as (
 
 ), customers as (
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , 'Beginning customers' as metric
     , beginning_customers as value
   from {quarterly_customers} customers
@@ -92,8 +92,8 @@ with arrs as (
   union all
 
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , 'New customers' as metric
     , new_customers as value
   from {quarterly_customers} customers
@@ -101,8 +101,8 @@ with arrs as (
   union all
 
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , 'Churn customers' as metric
     , churn_customers as value
   from {quarterly_customers} customers
@@ -110,8 +110,8 @@ with arrs as (
   union all
 
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , 'Ending customers' as metric
     , ending_customers as value
   from {quarterly_customers} customers
@@ -119,8 +119,8 @@ with arrs as (
   union all
 
   select
-    quarter
-    , quarter_at
+    quarter_name
+    , quarter
     , 'Customers % YoY growth' as metric
     , yearly_growth_rate as value
   from {quarterly_customers} customers
@@ -171,4 +171,4 @@ left join {quarterly_arr} arr
 )
 
 select * from final
-order by quarter_at desc
+order by quarter desc
