@@ -48,8 +48,8 @@ with monthly_customers as (
     , new_customers
     , churn_customers
     , ending_customers
-    , lag(ending_customers, 4) over (order by quarter_at) as last_year_customers
-    , lag(ending_customers) over (order by quarter_at) as last_quarter_customers
+    , lag(ending_customers, 4) over (order by quarter) as last_year_customers
+    , lag(ending_customers) over (order by quarter) as last_quarter_customers
 
   from monthly_changing_customers
   full outer join beginning_ending_customers
