@@ -1,8 +1,11 @@
-with plan_amount as (  -- plan = consolidation of all prices into one
+with item as (
+  select * from {stripe_subscription_item} item
+
+), plan_amount as (  -- plan = consolidation of all prices into one
   select
     subscription_id
     , sum(price_amount) as amount
-  from {stripe_subscription_item} item
+  from item
   group by 1
 
 ), plan as (
@@ -17,7 +20,7 @@ with plan_amount as (  -- plan = consolidation of all prices into one
     , price_id
     , product_id
     , row_number() over (partition by subscription_id order by created_at asc)  -- allow selecting oldest on conflict
-  from {stripe_subscription_item} item
+  from item
   left join plan_amount using (subscription_id)  -- add amount that includes other prices
   where is_main_product
 

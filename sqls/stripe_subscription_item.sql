@@ -1,4 +1,7 @@
-with price_tier as (
+with price as (
+  select * from {stripe_price} price
+
+), price_tier as (
   select
     id as price_id
     , flat_amount::float / 100 as flat_amount
@@ -19,7 +22,7 @@ with price_tier as (
     , lag(up_to_quantity) over (partition by item.id order by order_index) as tier_last_up_to_quantity
     , order_index
   from {stripe_schema}.subscription_item item
-  left join {stripe_price} price
+  left join price
     on item.plan_id = price.id
   left join  price_tier
     on price.id = price_tier.price_id
@@ -63,7 +66,7 @@ with price_tier as (
     , plan_id as price_id
     , price.product_id
   from {stripe_schema}.subscription_item item
-  left join {stripe_price} price
+  left join price
     on item.plan_id = price.id
   left join item_amount
     on item.id = item_amount.item_id

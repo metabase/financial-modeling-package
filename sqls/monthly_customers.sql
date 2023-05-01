@@ -1,9 +1,12 @@
-with customer_summary as (
+with revenue as (
+  select * from {revenue} rev
+
+), customer_summary as (
   select
     stripe_customer_id
     , min(date_trunc('month', recognized_at))::date as min_month_per_customer
     , max(date_trunc('month', recognized_at))::date as max_month_per_customer
-  from {revenue} rev
+  from revenue
   group by 1
 
 ), months_per_customer as (
@@ -16,11 +19,11 @@ with customer_summary as (
   select
     months_per_customer.month
     , months_per_customer.stripe_customer_id
-    , sum(rev.amount) as total_per_customer
-   from {revenue} rev
+    , sum(revenue.amount) as total_per_customer
+   from revenue
    full outer join months_per_customer
-     on months_per_customer.month::date = rev.month
-       and months_per_customer.stripe_customer_id = rev.stripe_customer_id
+     on months_per_customer.month::date = revenue.month
+       and months_per_customer.stripe_customer_id = revenue.stripe_customer_id
   group by 1,2
 
  ), summary_including_previous_values as (

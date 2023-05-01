@@ -52,8 +52,8 @@ with monthly_arr as (
     , contraction_arr
     , churn_arr
     , ending_arr
-    , lag(ending_arr, 4) over (order by quarter_at) as last_year_arr
-    , lag(ending_arr) over (order by quarter_at) as last_quarter_arr
+    , lag(ending_arr, 4) over (order by quarter) as last_year_arr
+    , lag(ending_arr) over (order by quarter) as last_quarter_arr
 
   from changing_arrs
   full outer join beginning_ending_arrs

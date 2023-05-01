@@ -1,4 +1,10 @@
-with monthly_invoices as (
+with invoice as (
+  select * from {stripe_invoice} invoice
+
+), subscription as (
+  select * from {stripe_subscription} subscription
+
+), monthly_invoices as (
    select
      invoice.total as amount
      , invoice.period_ended_at::date as date
@@ -9,8 +15,8 @@ with monthly_invoices as (
      , subscription.product_name as product_name
      , 'monthly' as billing_cycle
      , invoice.customer_id as stripe_customer_id
-   from {stripe_invoice} invoice
-   join {stripe_subscription} subscription
+   from invoice
+   join subscription
     on subscription.id = invoice.subscription_id
    where invoice.total > 0 -- removes refunds
    and subscription.plan_recurring_interval = 'month'
@@ -48,8 +54,8 @@ with monthly_invoices as (
          , subscription.product_name
          , 'annually' as billing_cycle
          , invoice.customer_id as stripe_customer_id
-   from {stripe_invoice} invoice
-   join {stripe_subscription} subscription
+   from invoice
+   join subscription
     on subscription.id = invoice.subscription_id
    where subscription.plan_recurring_interval = 'year'
      and subscription.plan_recurring_interval_count = 1
