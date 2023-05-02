@@ -40,7 +40,7 @@ select
     , quarter
     , quarter_label
     , year
-    , 'Latest Expansion ARR rate' as metric
+    , 'Latest Expansion ARR' as metric
     , expansion_arr as value
 from quarterly_arr
 where quarter = latest_quarter
