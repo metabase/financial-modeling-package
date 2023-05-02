@@ -32,6 +32,10 @@ order by 1
 
 select
     *
-    , (1.0 * num_trialers/num_trialers_previous_quarter) - 1 as quarterly_trialer_rate
+    , 1.0 * (num_trialers - num_trialers_previous_quarter) /
+        (case
+            when num_trialers_previous_quarter = 0 then 1
+             else num_trialers_previous_quarter
+         end) as quarterly_trialer_rate
 from final
 order by quarter

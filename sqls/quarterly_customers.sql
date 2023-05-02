@@ -67,7 +67,7 @@ with monthly_customers as (
     , ending_customers
     , avg_monthly_churn
     , 1.0*(ending_customers - last_year_customers) / last_year_customers as yearly_growth_rate
-    , (1.0* ending_customers/beginning_customers) - 1 as quarterly_growth_rate
+    , (1.0 * ending_customers - beginning_customers) / beginning_customers as quarterly_growth_rate
   from all_customers
   where quarter < date_trunc('quarter', current_date) -- remove current incomplete quarter_name
 

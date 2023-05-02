@@ -153,7 +153,7 @@ with quarterly_arr as (
     , 'Avg Monthly Customer Churn Rate' as metric
     , avg_monthly_churn as value
   from quarterly_customers customers
-  where churn_rate is not null
+  where avg_monthly_churn is not null
 
 ), acv as (
 
