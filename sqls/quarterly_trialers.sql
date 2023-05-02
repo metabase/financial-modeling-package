@@ -24,4 +24,5 @@ select
             else num_converted_post_trial + num_not_converted_post_trial
         end as trial_conversion_rate
 from quarterly_stats
+where quarter < date_trunc('quarter', current_date) -- remove current incomplete quarter_name
 order by 1
