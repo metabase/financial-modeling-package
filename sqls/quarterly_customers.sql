@@ -37,6 +37,7 @@ with monthly_customers as (
     , quarter
     , sum(new_customers) as new_customers
     , sum(churn_customers) as churn_customers
+    , avg(-1.0*churn_customers /case when beginning_customers = 0 then 1 else beginning_customers end) as avg_monthly_churn
   from monthly_customers
   group by 1,2
 
@@ -48,8 +49,8 @@ with monthly_customers as (
     , new_customers
     , churn_customers
     , ending_customers
+    , avg_monthly_churn
     , lag(ending_customers, 4) over (order by quarter) as last_year_customers
-    , lag(ending_customers) over (order by quarter) as last_quarter_customers
 
   from monthly_changing_customers
   full outer join beginning_ending_customers
@@ -64,9 +65,9 @@ with monthly_customers as (
     , new_customers
     , churn_customers
     , ending_customers
+    , avg_monthly_churn
     , 1.0*(ending_customers - last_year_customers) / last_year_customers as yearly_growth_rate
-    , 1.0* ending_customers/last_quarter_customers as quarterly_growth_rate
-    , -1.0*churn_customers/ending_customers as churn_rate
+    , (1.0* ending_customers/beginning_customers) - 1 as quarterly_growth_rate
   from all_customers
   where quarter < date_trunc('quarter', current_date) -- remove current incomplete quarter_name
 
