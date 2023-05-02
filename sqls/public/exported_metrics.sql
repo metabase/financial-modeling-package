@@ -4,6 +4,9 @@ with quarterly_arr as (
 ), quarterly_customers as (
   select * from {quarterly_customers} customers
 
+), quarterly_trialers as (
+  select * from {quarterly_trialers} trialers
+
 ), arrs as (
   select
     quarter
@@ -157,11 +160,20 @@ with quarterly_arr as (
 select
     quarter
     , quarter_name
-    , 'Annual Contract Value'
-    , 1.0 * ending_arr / ending_customers as acv
+    , 'Annual Contract Value' as metric
+    , 1.0 * ending_arr / ending_customers as value
 from quarterly_customers customers
 left join quarterly_arr arr
     using (quarter, quarter_name)
+
+), trialers as (
+
+select
+    quarter
+    , quarter_name
+    , 'Trial Quarterly Conversion Rate' as metric
+    , trial_conversion_rate as value
+ from quarterly_trialers
 
 ), final as (
   select * from arrs
@@ -173,6 +185,10 @@ left join quarterly_arr arr
   union all
 
   select * from acv
+
+  union all
+
+  select * from trialers
 
 )
 
