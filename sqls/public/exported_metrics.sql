@@ -150,10 +150,10 @@ with quarterly_arr as (
   select
     quarter
     , quarter_name
-    , 'Customer Quarterly Churn Rate' as metric
-    , churn_rate as value
+    , 'Avg Monthly Customer Churn Rate' as metric
+    , avg_monthly_churn as value
   from quarterly_customers customers
-  where churn_rate is not null
+  where avg_monthly_churn is not null
 
 ), acv as (
 
@@ -173,6 +173,15 @@ select
     , quarter_name
     , 'Trial Quarterly Conversion Rate' as metric
     , trial_conversion_rate as value
+ from quarterly_trialers
+
+ union all
+
+ select
+    quarter
+    , quarter_name
+    , 'Trialer % Quarterly growth ' as metric
+    , quarterly_trialer_rate as value
  from quarterly_trialers
 
 ), final as (
