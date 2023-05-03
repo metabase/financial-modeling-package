@@ -4,7 +4,7 @@ A library of data products that can be created from a single command.
 
 Currently, financial model is the only data product. More will be added later if there is interest.
 
-## Runtime Dependencies
+## Dependencies
 
 The following sections will help you set up everything locally so that you can run a script to create your data
 products.
@@ -54,7 +54,7 @@ Once installed, run the following command to checkout this repo:
 gh repo clone metabase/data-products
 ```
 
-## Setup environments & run tests
+## Set up environments & run tests
 
 We use `tox` to create Python environments and run tests. This is required to run the script in the next step even if you
 can't care about running tests.
@@ -67,16 +67,16 @@ brew install tox
 
 For other platforms, follow these [installation instructions](https://tox.wiki/en/latest/installation.html).
 
-Then go to local checkout directory for this repo and run `tox` to setup Python environments and run tests:
+Then go to local checkout directory for this repo and run `tox` to set up Python environments and run tests:
 
 ```console
 cd data-products
 tox
 ```
 
-## Setup data products
+## Set up data products
 
-After running `tox`, a Python virtual environment is created that contains the `dap` script to setup/create data
+After running `tox`, a Python virtual environment is created that contains the `dap` script to set up/create data
 products. dap is short for **da**ta **p**roducts.
 
 Next, activate the environment using `source`, run `dap`, and answer a few questions to create a config file for your
