@@ -54,7 +54,8 @@ with revenue as (
         else 0
       end as contraction_rev
     , case
-        when month < date_trunc('month', current_date)::date and total_per_customer_next_month is null then (-1 * total_per_customer)
+        when month < date_trunc('month', current_date)::date and total_per_customer_previous_month is not null and total_per_customer is null
+          then (-1 * total_per_customer_previous_month)
         else 0
       end as churn_rev
 from summary_including_previous_values
@@ -78,7 +79,7 @@ from summary_including_previous_values
     , new_rev * 12 as new_arr
     , expansion_rev * 12 as expansion_arr
     , contraction_rev * 12 as contraction_arr
-    , coalesce(lag(churn_rev) over (order by month), 0) * 12 as churn_arr
+    , churn_rev * 12 as churn_arr
     , ending_rev * 12 as ending_arr
   from monthly_summary
   where month <= date_trunc('month', current_date) -- remove next incomplete month
