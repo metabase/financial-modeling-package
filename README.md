@@ -1,7 +1,42 @@
 # data-products
+
 A library of data products that can be created from a single command.
 
 Currently, financial model is the only data product. More will be added later if there is interest.
+
+## Runtime Dependencies
+
+The following sections will help you set up everything locally so that you can run a script to create your data
+products.
+
+Before you spent too much time doing that, note the data product has the following dependencies:
+
+1. Metabase instance accessible from the Internet. We use public sharing on metric questions to export CSV data to
+   Google Sheets, which require the URL to be accessible from the Internet.
+2. Model or query cache turned on in the Metabase instance. Metrics query/question can take about 100+ seconds to
+   finish, and unfortunately Google Sheets will timeout during import.
+3. Stripe data ingested using [Fivetran](https://fivetran.com/docs/applications/stripe)
+4. Stripe data stored in Postgres. All our SQLs are written for Postgres and likely won't work for other databases.
+   Redshift might work as they are fairly similar, but not tested.
+5. Access to Google Sheets. The financial model template is created in Google Sheets where you need to make a copy.
+
+If you do not meet the dependencies, this won't work for you.
+
+## Install Python 3
+
+The data products are created using a Python script, so you must have Python installed before you can run it.
+
+We tested our scripts using Python 3.10, so the equivalent or higher is recommended, however older 3.x versions will
+probably work too.
+
+On macOS, run the following to install:
+
+```
+brew install python3
+```
+
+For other platforms, see [download page on python.com](https://www.python.org/downloads/)
+
 
 ## Checkout repo
 
@@ -30,6 +65,8 @@ On macOS, install it by running:
 brew install tox
 ```
 
+For other platforms, follow these [installation instructions](https://tox.wiki/en/latest/installation.html).
+
 Then go to local checkout directory for this repo and run `tox` to setup Python env and run tests:
 
 ```console
@@ -40,7 +77,7 @@ tox
 ## Setup data products
 
 After running `tox`, a Python virtual environment is created that contains the `dap` script to setup/create data
-products.
+products. dap is short for *da*ta *p*roducts.
 
 Next, activate the environment using `source`, run `dap`, and answer a few questions to create a config file for your
 setup:
@@ -76,7 +113,7 @@ data in the Summary tab and forecasts in the Forecasted Summary tab now! Congrat
 
 Lastly, learn more about how to use the spreadsheet in the Info tab.
 
-NOTE: The import may time out. You can check the "\_import" prefixed tabs for progress and result. Make sure that
+*NOTE*: The import may time out. You can check the "\_import" prefixed tabs for progress and result. Make sure that
 your Metabase instance has model or query cache turned on, otherwise the CSV export would take too long (over 100
 seconds) and won't ever work. Wait a few minutes for the cache to kick in, and then try again by deleting the URL in the
 spreadsheet and reverting.
