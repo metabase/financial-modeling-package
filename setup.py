@@ -3,7 +3,7 @@ import setuptools
 
 setuptools.setup(
     name='data-products',
-    version='0.0.1',
+    version='0.1.0',
 
     author='Max Zheng',
     author_email='max@metabase.com',
@@ -20,7 +20,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     include_package_data=True,
 
-    python_requires='>=3.8',
+    python_requires='>=3',
     setup_requires=['setuptools-git', 'wheel'],
 
     entry_points={
@@ -39,7 +39,6 @@ setuptools.setup(
       'License :: OSI Approved :: MIT License',
 
       'Programming Language :: Python :: 3',
-      'Programming Language :: Python :: 3.8',
     ],
 
     keywords='data product financial models generator',
