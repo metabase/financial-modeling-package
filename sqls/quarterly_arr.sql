@@ -71,7 +71,7 @@ with monthly_arr as (
     , ending_arr
     , (ending_arr - last_year_arr) / last_year_arr as yearly_growth_rate
     , (1.0 * ending_arr - beginning_arr) / beginning_arr as quarterly_growth_rate
-    , (1.0 * expansion_arr - beginning_arr) / beginning_arr as expansion_rate
+    , 1.0 * expansion_arr / beginning_arr as expansion_rate
   from all_arrs
   where quarter < date_trunc('quarter', current_date) -- remove current incomplete quarter_name
 
