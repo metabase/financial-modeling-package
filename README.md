@@ -77,7 +77,7 @@ tox
 ## Setup data products
 
 After running `tox`, a Python virtual environment is created that contains the `dap` script to setup/create data
-products. dap is short for *da*ta *p*roducts.
+products. dap is short for **da**ta **p**roducts.
 
 Next, activate the environment using `source`, run `dap`, and answer a few questions to create a config file for your
 setup:
@@ -113,7 +113,7 @@ data in the Summary tab and forecasts in the Forecasted Summary tab now! Congrat
 
 Lastly, learn more about how to use the spreadsheet in the Info tab.
 
-*NOTE*: The import may time out. You can check the "\_import" prefixed tabs for progress and result. Make sure that
+**NOTE**: The import may time out. You can check the "\_import" prefixed tabs for progress and result. Make sure that
 your Metabase instance has model or query cache turned on, otherwise the CSV export would take too long (over 100
 seconds) and won't ever work. Wait a few minutes for the cache to kick in, and then try again by deleting the URL in the
 spreadsheet and reverting.
