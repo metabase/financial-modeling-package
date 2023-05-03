@@ -86,9 +86,10 @@ class DAP:
         """ Create data products based on configuration file. """
         self._create_models(force=force, model=model, no_cache=no_cache)
 
-        print('\nPlease copy the CSV URL above and '
-              'paste into the Input URLs tab of the Financial Model template at ...')
-        print('If import times out, wait a few minutes for caching to kick in, then try again by deleting the URL.')
+        print('\nPlease copy the CSV URLs above and '
+              'paste them into the Inputs tab of the Financial Model template at <TODO: Add url>')
+        print('If import times out, wait a few minutes for Metabase model/query caching to kick in, '
+              'and then try again by deleting the URL followed by reverting.')
 
     def _create_models(self, force=False, model=None, no_cache=False):
         """ Create Metabase models """
