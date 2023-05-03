@@ -181,7 +181,7 @@ select
     quarter
     , quarter_name
     , 'Trialer % Quarterly growth ' as metric
-    , quarterly_trialer_rate as value
+    , quarterly_growth_rate as value
  from quarterly_trialers
 
 ), final as (

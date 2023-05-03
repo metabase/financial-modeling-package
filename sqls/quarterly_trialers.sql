@@ -1,5 +1,5 @@
 with quarterly_stats as (
-select
+  select
     date_trunc('quarter', month_started_trial)::date as quarter
     , concat(
         case
@@ -13,11 +13,11 @@ select
     , sum(num_not_converted_post_trial) as num_not_converted_post_trial
     , sum(num_converted_post_trial) as num_converted_post_trial
     , sum(num_not_converted_post_trial) + sum(num_converted_post_trial) as num_trialers
-from {monthly_trialers} as trial_conversion
-group by 1, 2
+  from {monthly_trialers} as trial_conversion
+  group by 1, 2
 
-), final as (
-select
+), more_stats as (
+  select
     *
     , 1.0 * num_converted_post_trial /
         case
@@ -25,17 +25,26 @@ select
             else num_trialers
         end as trial_conversion_rate
     , lag(num_trialers) over (order by quarter) as num_trialers_previous_quarter
-from quarterly_stats
-where quarter < date_trunc('quarter', current_date) -- remove current incomplete quarter_name
-order by 1
-)
+  from quarterly_stats
+  where quarter < date_trunc('quarter', current_date) -- remove current incomplete quarter_name
+  order by 1
 
-select
-    *
+), final as (
+  select
+    quarter
+    , quarter_name
+    , num_not_converted_post_trial
+    , num_converted_post_trial
+    , num_trialers
+    , trial_conversion_rate
     , 1.0 * (num_trialers - num_trialers_previous_quarter) /
         (case
             when num_trialers_previous_quarter = 0 then 1
              else num_trialers_previous_quarter
-         end) as quarterly_trialer_rate
-from final
-order by quarter
+         end) as quarterly_growth_rate
+  from more_stats
+  order by quarter
+
+)
+
+select * from final

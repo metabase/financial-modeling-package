@@ -84,8 +84,8 @@ with quarterly_arr as (
   union all
 
   select
-      'Latest New Trialers Rate ' as metric
-      , quarterly_trialer_rate as value
+      'Latest Trialer Quarterly Growth Rate' as metric
+      , quarterly_growth_rate as value
   from quarterly_trialers
   where quarter = latest_quarter
 
