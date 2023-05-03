@@ -45,6 +45,18 @@ select
 from quarterly_arr
 where quarter = latest_quarter
 
+union all
+
+select
+    quarter_name
+    , quarter
+    , quarter_label
+    , year
+    , 'Latest Expansion Rate' as metric
+    , expansion_rate as value
+from quarterly_arr
+where quarter = latest_quarter
+
 ), customers as (
 
 select
