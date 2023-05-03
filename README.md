@@ -4,23 +4,21 @@ A library of data products that can be created from a single command.
 
 Currently, financial model is the only data product. More will be added later if there is interest.
 
-## Dependencies
+## Requirements
 
-The following sections will help you set up everything locally so that you can run a script to create your data
-products.
-
-Before spending too much time doing that, note the data product has the following dependencies:
+In order to use this to create data products, the following requirements must be met. If you do not meet all the
+requirements, this won't work for you.
 
 1. Metabase instance accessible from the internet. We use public sharing on metric questions to export CSV data to
    Google Sheets, which requires the URL to be accessible from the internet.
-2. Model or query cache turned on in the Metabase instance. Metrics query/question can take about 100+ seconds to
+2. Model or query caching turned on in the Metabase instance. Metrics query/question can take about 100+ seconds to
    finish, and unfortunately Google Sheets will timeout during import without caching.
+   [Model caching](https://www.metabase.com/docs/latest/data-modeling/models#model-caching) is preferred for
+   best experience, but [query caching](https://www.metabase.com/docs/latest/configuring-metabase/caching) is sufficient.
 3. Stripe data ingested using [Fivetran](https://fivetran.com/docs/applications/stripe)
 4. Stripe data stored in Postgres. All our SQLs are written for Postgres and likely won't work for other databases.
    Redshift might work as they are fairly similar, but not tested.
 5. Access to Google Sheets. The financial model template is created in Google Sheets where you need to make a copy.
-
-If you do not meet the requirements, this won't work for you.
 
 ## Install Python 3
 
