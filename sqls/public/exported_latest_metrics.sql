@@ -22,6 +22,18 @@ with quarterly_arr as (
     , extract(year from quarter) as year
   from {quarterly_trialers} trialers
 
+), quarterly_acv_rates as (
+   select
+    quarter
+    , quarterly_arr.latest_quarter
+    , 'Latest Annual Contract Value % Growth Rate' as metric
+    , 1.0 * ((ending_arr / ending_customers) -  (lag(ending_arr) over (order by quarter) / lag(ending_customers)  over (order by quarter)))
+        /
+        (lag(ending_arr) over (order by quarter) / lag(ending_customers)  over (order by quarter)) as value
+    from quarterly_customers
+    left join quarterly_arr
+    using (quarter)
+
 ), arr as (
   select
       'Latest Ending ARR' as metric
@@ -98,25 +110,12 @@ with quarterly_arr as (
 
   union all
 
-    select
-        metric
-        , value
-
-    from (
-    select
-        quarter
-        , quarterly_arr.latest_quarter
-        , 'Latest Annual Contract Value % Growth Rate' as metric
-        , 1.0 * ((ending_arr / ending_customers) -  (lag(ending_arr) over (order by quarter) / lag(ending_customers)  over (order by quarter)))
-                /
-                (lag(ending_arr) over (order by quarter) / lag(ending_customers)  over (order by quarter)) as value
-    from quarterly_customers
-    left join quarterly_arr
-        using (quarter)
-
-) quarterly_acv_rates
-
-where latest_quarter = quarter
+  select
+    metric
+    , value
+  from quarterly_acv_rates
+  where
+    latest_quarter = quarter
 
 ), final as (
   select 'Latest Year' as metric, year as value from quarterly_arr where quarter = latest_quarter
