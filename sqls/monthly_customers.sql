@@ -48,7 +48,7 @@ from summary_including_previous_values
     select
         month
         , count(distinct case when is_new then stripe_customer_id end) as new_customers
-        , count(distinct case when is_churn then stripe_customer_id end) as churn_customers
+        , count(distinct case when is_churn then stripe_customer_id end) * -1 as churn_customers
         , count(distinct case when is_paid then stripe_customer_id end) as ending_customers
         , count(distinct case when is_retained then stripe_customer_id end) as retained_customers
     from monthly_status
@@ -59,7 +59,7 @@ select
     month
     , coalesce(lag(ending_customers) over (order by month),0) as beginning_customers
     , new_customers
-    , -1 * coalesce(churn_customers,0) as churn_customers
+    , churn_customers
     , ending_customers
 from monthly_summary
 where month <= date_trunc('month', current_date) -- remove next incomplete month
