@@ -77,10 +77,11 @@ class DAP:
             return
 
         self.save_config(setup_dict)
-        print(f'Created {self.CONFIG_FILE} with a list of all Stripe products.\n')
+        print(f'\nCreated {self.CONFIG_FILE} with a list of all Stripe products.\n')
         print('Please edit it to update the Stripe product names and indicate if it is a main product or not.\n'
               'A main product will be included in the financial reports while other products will be\n'
-              'collapsed and aggregated as part of the main product in the same subscription')
+              'collapsed and aggregated as part of the main product in the same subscription.\n\n'
+              'Once done, run "dap create" to create the data models/questions in Metabase.')
 
     def create(self, force=False, model=None, no_cache=False):
         """ Create data products based on configuration file. """
