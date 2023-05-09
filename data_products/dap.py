@@ -77,10 +77,11 @@ class DAP:
             return
 
         self.save_config(setup_dict)
-        print(f'Created {self.CONFIG_FILE} with a list of all Stripe products.\n')
+        print(f'\nCreated {self.CONFIG_FILE} with a list of all Stripe products.\n')
         print('Please edit it to update the Stripe product names and indicate if it is a main product or not.\n'
               'A main product will be included in the financial reports while other products will be\n'
-              'collapsed and aggregated as part of the main product in the same subscription')
+              'collapsed and aggregated as part of the main product in the same subscription.\n\n'
+              'Once done, run "dap create" to create the data models/questions in Metabase.')
 
     def create(self, force=False, model=None, no_cache=False):
         """ Create data products based on configuration file. """
@@ -196,8 +197,13 @@ class DAP:
             if model_id:
                 mb_client.put(f'card/{model_id}', json=model_json)
                 if is_model and not no_cache:
-                    mb_client.post(f'card/{model_id}/persist', skip_return=True)
-                    mb_client.post(f'card/{model_id}/refresh', skip_return=True)
+                    try:
+                        mb_client.post(f'card/{model_id}/persist', skip_return=True)
+                        mb_client.post(f'card/{model_id}/refresh', skip_return=True)
+                    except Exception as e:
+                        if 'Client Error' not in str(e):  # Ignore client error as model caching is not turned on.
+                            raise
+
                 print(f'\t* Updated existing {model_or_question}', name, 'at',
                       self.config['metabase']['url'] + f'{model_or_question}/{model_id}')
 
@@ -215,7 +221,11 @@ class DAP:
                       self.config['metabase']['url'] + f'public/question/{uuid}.csv')
 
             elif no_cache:
-                mb_client.post(f'card/{model_id}/unpersist', skip_return=True)
+                try:
+                    mb_client.post(f'card/{model_id}/unpersist', skip_return=True)
+                except Exception as e:
+                    if 'Client Error' not in str(e):  # Ignore client error as model caching is not turned on.
+                        raise
 
             sql_dependencies.pop(file)
             created[ref_name] = '{{' + ref_id(model_id, ref_name) + '}}'
