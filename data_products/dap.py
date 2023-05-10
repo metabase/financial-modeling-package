@@ -33,10 +33,7 @@ class DAP:
 
     def setup(self):
         """ Setup configuration file for data products """
-        try:
-            config = self.config
-        except Exception:
-            config = {}
+        config = self.config if self.CONFIG_FILE.exists() else {}
 
         url = click.prompt('Enter your Metabase URL', default=config.get('metabase', {}).get('url'))
         username = click.prompt('Enter your Metabase username', default=config.get('metabase', {}).get('username'))
