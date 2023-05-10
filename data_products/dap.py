@@ -36,7 +36,8 @@ class DAP:
         config = self.config if self.CONFIG_FILE.exists() else {}
 
         url = click.prompt('Enter your Metabase URL', default=config.get('metabase', {}).get('url'))
-        username = click.prompt('Enter your Metabase username', default=config.get('metabase', {}).get('username'))
+        username = click.prompt('Enter your Metabase admin username/email',
+                                default=config.get('metabase', {}).get('username'))
         password = click.prompt('Enter your Metabase password', confirmation_prompt=True, hide_input=True)
 
         schema = click.prompt('Enter your Stripe schema name ingested by Fivetran',

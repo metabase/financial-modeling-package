@@ -9,16 +9,17 @@ Currently, financial model is the only data product. More will be added later if
 In order to use this to create data products, the following requirements must be met. If you do not meet all the
 requirements, this won't work for you.
 
-1. Metabase instance accessible from the internet. We use public sharing on metric questions to export CSV data to
+1. Admin username/password for a Metabase instance. The script uses it to create models/questions via API.
+2. Metabase instance accessible from the internet. We use public sharing on metric questions to export CSV data to
    Google Sheets, which requires the URL to be accessible from the internet.
-2. Model or query caching turned on in the Metabase instance. Metrics query/question can take about 100+ seconds to
+3. Model or query caching turned on in the Metabase instance. Metrics query/question can take about 100+ seconds to
    finish, and unfortunately Google Sheets will timeout during import without caching.
    [Model caching](https://www.metabase.com/docs/latest/data-modeling/models#model-caching) is preferred for
    best experience, but [query caching](https://www.metabase.com/docs/latest/configuring-metabase/caching) is sufficient.
-3. Stripe data ingested using [Fivetran](https://fivetran.com/docs/applications/stripe)
-4. Stripe data stored in Postgres. All our SQLs are written for Postgres and likely won't work for other databases.
+4. Stripe data ingested using [Fivetran](https://fivetran.com/docs/applications/stripe)
+5. Stripe data stored in Postgres. All our SQLs are written for Postgres and likely won't work for other databases.
    Redshift might work as they are fairly similar, but not tested.
-5. Access to Google Sheets. The financial model template is created in Google Sheets where you need to make a copy.
+6. Access to Google Sheets. The financial model template is created in Google Sheets where you need to make a copy.
 
 ## Install Python 3
 
