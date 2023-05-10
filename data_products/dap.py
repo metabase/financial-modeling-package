@@ -50,7 +50,8 @@ class DAP:
 
         mb_client = MetabaseClient(url, username, password)
         try:
-            db_id = [d['id'] for d in mb_client.get('database')['data'] if d['name'] == db][0]
+            db_id = [d['id'] for d in mb_client.get('database')['data']
+                     if d['name'] == db or d['details'].get('dbname') == db][0]
 
         except IndexError:
             exit(f'Could not find a database connection matching "{db}". Please try again with the correct name.')
