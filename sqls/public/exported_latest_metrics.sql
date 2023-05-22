@@ -57,6 +57,14 @@ with quarterly_arr as (
   from quarterly_arr
   where quarter = latest_quarter
 
+  union all
+
+  select
+       'Latest Contraction Rate' as metric
+       , contraction_rate as value
+  from quarterly_arr
+  where quarter = latest_quarter
+
   ), customers as (
 
   select
