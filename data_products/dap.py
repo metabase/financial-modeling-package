@@ -87,7 +87,8 @@ class DAP:
         self._create_models(force=force, model=model, no_cache=no_cache)
 
         print('\nPlease copy the CSV URLs above and '
-              'paste them into the Inputs tab of the Financial Model template at <TODO: Add url>')
+              'paste them into the Inputs tab of the Financial Model template at '
+              'https://docs.google.com/spreadsheets/d/1wG1p-wj9k3AxLeZcRvTVNgxJdiEaOXof-0heoHGkvpM')
         print('If import times out, wait a few minutes for Metabase model/query caching to kick in, '
               'and then try again by deleting the URL followed by reverting.')
 

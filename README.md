@@ -106,7 +106,7 @@ dap create
 It will create the requested Metabase collection from previous step, a few models/questions, turn on public sharing for
 the metric questions, and provide URLs to the CSV exports.
 
-Next, make a copy of the Google Sheets financial model template at <TODO: Add url to read-only template> and plug in
+Next, make a copy of the [Google Sheets financial model template](https://docs.google.com/spreadsheets/d/1wG1p-wj9k3AxLeZcRvTVNgxJdiEaOXof-0heoHGkvpM) and plug in
 the CSV URLs into the Inputs tab. If the import is successful, you would have a working financial model with historical
 data in the Summary tab and forecasts in the Forecasted Summary tab now! Congrats!!
 
