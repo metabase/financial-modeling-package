@@ -1,0 +1,8 @@
+#!/bin/bash
+set -ex
+
+# Workaround for PyYAML install bug: https://github.com/yaml/pyyaml/issues/601#issuecomment-1829234500
+
+echo "cython<3" > /tmp/financial-model-install-constraint.txt
+PIP_CONSTRAINT=/tmp/financial-model-install-constraint.txt pip install -U $* -r requirements.txt
+

@@ -51,7 +51,7 @@ with item as (
     , subscription.customer_id as stripe_customer_id
     , price_id
     , product_id
-  from {stripe_schema}.subscription
+  from {stripe_schema}.subscription_history subscription
   left join {stripe_customer} stripe_customer
     on subscription.customer_id = stripe_customer.id
   left join plan
